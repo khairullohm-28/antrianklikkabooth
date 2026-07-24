@@ -14,6 +14,9 @@ export const TicketPrintModal: React.FC = () => {
     tickets,
   } = useQueue();
 
+  const [isPrinting, setIsPrinting] = React.useState(false);
+  const [copied, setCopied] = React.useState(false);
+
   if (!isPrintModalOpen || !activeTicketToPrint) return null;
 
   // Calculate estimated wait time for this ticket
@@ -32,12 +35,32 @@ export const TicketPrintModal: React.FC = () => {
   }
 
   const handlePrint = () => {
-    window.print();
+    setIsPrinting(true);
+    // Use requestAnimationFrame + setTimeout to yield main thread and allow UI repaint before print dialog blocks main thread
+    requestAnimationFrame(() => {
+      setTimeout(() => {
+        try {
+          window.print();
+        } catch (err) {
+          console.warn('Window print error:', err);
+        } finally {
+          setIsPrinting(false);
+        }
+      }, 100);
+    });
   };
 
-  const handleCopyLink = () => {
-    navigator.clipboard.writeText(customerQrUrl);
-    alert(`Link antrian ${activeTicketToPrint.ticketNumber} tersalin!\n\n${customerQrUrl}`);
+  const handleCopyLink = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(customerQrUrl);
+      }
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    } catch {
+      setCopied(true);
+      setTimeout(() => setCopied(false), 2500);
+    }
   };
 
   return (
@@ -77,7 +100,7 @@ export const TicketPrintModal: React.FC = () => {
             className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
           >
             <Share2 className="w-4 h-4 text-slate-500" />
-            Salin Link QR
+            {copied ? 'Link Tersalin!' : 'Salin Link QR'}
           </button>
 
           <div className="flex items-center gap-2 w-full sm:w-auto">
@@ -91,10 +114,11 @@ export const TicketPrintModal: React.FC = () => {
             <button
               id="btn-trigger-browser-print"
               onClick={handlePrint}
-              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition-all"
+              disabled={isPrinting}
+              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50"
             >
               <Printer className="w-4 h-4" />
-              Cetak Sekarang
+              {isPrinting ? 'Menyiapkan Cetak...' : 'Cetak Sekarang'}
             </button>
           </div>
         </div>
