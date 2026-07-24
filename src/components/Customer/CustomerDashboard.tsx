@@ -327,15 +327,6 @@ export const CustomerDashboard: React.FC = () => {
                 </span>
               </div>
             )}
-
-            {/* Reset / Search Another Ticket Button */}
-            <button
-              onClick={handleResetTicket}
-              className="mt-5 text-xs text-slate-500 hover:text-slate-800 font-bold underline inline-flex items-center gap-1.5 transition-colors"
-            >
-              <RefreshCw className="w-3.5 h-3.5" />
-              <span>Ganti / Cari Tiket Lain</span>
-            </button>
           </div>
 
           {/* Sound & Vibration Notification Toggle Bar */}
@@ -350,15 +341,15 @@ export const CustomerDashboard: React.FC = () => {
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara & Getar HP</h3>
+                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara & Getar</h3>
                   <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
                     <Smartphone className="w-3 h-3" /> Getar
                   </span>
                 </div>
                 <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                   {soundEnabled
-                    ? 'Suara & getar HP AKTIF. HP akan berbunyi & bergetar saat nomor Anda dipanggil.'
-                    : 'Aktifkan agar HP berbunyi & bergetar saat giliran tiba.'}
+                    ? 'Suara & getar aktif saat giliran dipanggil.'
+                    : 'Aktifkan agar HP berbunyi saat giliran tiba.'}
                 </p>
               </div>
             </div>

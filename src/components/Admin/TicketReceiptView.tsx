@@ -5,20 +5,25 @@ import { useQueue } from '../../context/QueueContext';
 
 interface TicketReceiptViewProps {
   ticket: Ticket;
-  settings: PrintSettings;
+  settings?: PrintSettings;
+  printSettings?: PrintSettings;
   estimatedWaitMinutes?: number;
   id?: string;
   isPrintMode?: boolean;
+  booth?: any;
 }
 
 export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   ticket,
-  settings,
+  settings: propSettings,
+  printSettings: propPrintSettings,
   estimatedWaitMinutes,
   id = 'printable-thermal-ticket',
   isPrintMode = false,
 }) => {
-  const { appsScriptConfig } = useQueue();
+  const { printSettings: contextSettings, appsScriptConfig } = useQueue();
+  const settings = propSettings || propPrintSettings || contextSettings || {};
+
   // Format Date & Time according to settings
   const createdDate = new Date(ticket.createdAt);
   const isValidDate = !isNaN(createdDate.getTime());

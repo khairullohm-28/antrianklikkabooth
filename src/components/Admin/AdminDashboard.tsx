@@ -1,548 +1,257 @@
 import React, { useState } from 'react';
 import { useQueue } from '../../context/QueueContext';
-import { BoothCard } from './BoothCard';
+import { AdminLogin } from './AdminLogin';
 import { SettingsModal } from './SettingsModal';
 import { TicketPrintModal } from './TicketPrintModal';
-import { AdminLogin } from './AdminLogin';
-import { Booth, Ticket } from '../../types';
+import { Booth } from '../../types';
+
+// Views
+import { BerandaView } from './views/BerandaView';
+import { OperasionalView } from './views/OperasionalView';
+import { ManajemenView } from './views/ManajemenView';
+import { MediaDisplayView } from './views/MediaDisplayView';
+import { SettingView } from './views/SettingView';
+import { LaporanView } from './views/LaporanView';
+
 import {
-  Sliders,
-  Plus,
-  History,
-  Clock,
-  Users,
-  Megaphone,
-  Printer,
-  Sparkles,
-  Download,
-  Calendar,
-  BarChart3,
-  CheckCircle2,
+  LayoutDashboard,
+  PlaySquare,
+  Layers,
+  Tv,
+  Settings,
+  FileSpreadsheet,
   LogOut,
+  Menu,
+  X,
   ShieldCheck,
-  Share2,
-  Trash2,
+  Camera,
+  ChevronLeft,
+  ChevronRight,
 } from 'lucide-react';
 
+export type AdminTab =
+  | 'beranda'
+  | 'operasional'
+  | 'manajemen'
+  | 'media_display'
+  | 'setting'
+  | 'laporan';
+
 export const AdminDashboard: React.FC = () => {
-  const {
-    booths,
-    tickets,
-    logs,
-    clearTodayLogs,
-    isAdminLoggedIn,
-    logoutAdmin,
-    deleteTicket,
-  } = useQueue();
+  const { isAdminLoggedIn, logoutAdmin, printSettings } = useQueue();
 
+  const [activeTab, setActiveTab] = useState<AdminTab>('beranda');
+  const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
+  const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
+
+  // Settings modal bridge if requested by BoothCard edit button
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsTab, setSettingsTab] = useState<'booths' | 'label' | 'script' | 'danger'>('booths');
-  const [selectedBoothForEdit, setSelectedBoothForEdit] = useState<Booth | null>(null);
-
-  // Time filter for Rekapan Selesai
-  const now = new Date();
-  const [rekapPeriod, setRekapPeriod] = useState<'daily' | 'monthly' | 'yearly' | 'all'>('daily');
-  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
-  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
-
-  // Month names in Indonesian
-  const monthNames = [
-    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
-    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
-  ];
-
-  // Year options list from 2000 to 2030
-  const yearOptions = Array.from({ length: 31 }, (_, i) => 2000 + i);
+  const [settingsModalTab, setSettingsModalTab] = useState<'booths' | 'label' | 'script' | 'danger'>('booths');
 
   // If not logged in as Admin, show Admin Login Card
   if (!isAdminLoggedIn) {
     return <AdminLogin />;
   }
 
-  // Quick Stats
-  const totalWaiting = tickets.filter((t) => t.status === 'waiting').length;
-  const totalCalled = tickets.filter((t) => t.status === 'called' || t.status === 'completed').length;
-  const totalPrinted = tickets.length;
+  const handleOpenSettingsModal = (tab: 'booths' | 'label' | 'script' | 'danger' = 'booths') => {
+    setSettingsModalTab(tab);
+    setIsSettingsOpen(true);
+  };
 
   const handleEditBoothFromCard = (booth: Booth) => {
-    setSelectedBoothForEdit(booth);
-    setSettingsTab('booths');
-    setIsSettingsOpen(true);
+    setActiveTab('manajemen');
   };
 
-  const handleOpenSettings = (tab: 'booths' | 'label' | 'script' | 'danger' = 'booths') => {
-    setSettingsTab(tab);
-    setIsSettingsOpen(true);
-  };
+  const navItems = [
+    {
+      id: 'beranda' as AdminTab,
+      label: 'BERANDA',
+      icon: LayoutDashboard,
+    },
+    {
+      id: 'operasional' as AdminTab,
+      label: 'OPERASIONAL',
+      icon: PlaySquare,
+    },
+    {
+      id: 'manajemen' as AdminTab,
+      label: 'MANAJEMEN',
+      icon: Layers,
+    },
+    {
+      id: 'media_display' as AdminTab,
+      label: 'MEDIA DISPLAY',
+      icon: Tv,
+    },
+    {
+      id: 'setting' as AdminTab,
+      label: 'SETTING',
+      icon: Settings,
+    },
+    {
+      id: 'laporan' as AdminTab,
+      label: 'LAPORAN & ANALISIS',
+      icon: FileSpreadsheet,
+    },
+  ];
 
-  // Filter completed tickets based on period (Daily, Monthly, Yearly, All)
-  const filteredTicketsForRekap = tickets.filter((ticket) => {
-    const ticketDate = new Date(ticket.createdAt);
-    if (isNaN(ticketDate.getTime())) return true; // fallback if bad date
-
-    if (rekapPeriod === 'daily') {
-      return (
-        ticketDate.getDate() === now.getDate() &&
-        ticketDate.getMonth() === now.getMonth() &&
-        ticketDate.getFullYear() === now.getFullYear()
-      );
-    } else if (rekapPeriod === 'monthly') {
-      return (
-        ticketDate.getMonth() === selectedMonth &&
-        ticketDate.getFullYear() === selectedYear
-      );
-    } else if (rekapPeriod === 'yearly') {
-      return ticketDate.getFullYear() === selectedYear;
-    } else {
-      return true; // 'all'
-    }
-  });
-
-  const completedTicketsInRekap = filteredTicketsForRekap.filter((t) => t.status === 'completed');
-
-  // Export data to Excel CSV format
-  const handleExportExcelCSV = () => {
-    if (filteredTicketsForRekap.length === 0) {
-      alert('Belum ada data transaksi antrian untuk diekspor.');
-      return;
-    }
-
-    const headers = ['ID Tiket', 'Tanggal', 'Waktu Dibuat', 'Waktu Dipanggil', 'Waktu Selesai', 'Booth', 'Kode Tiket', 'Status'];
-    const rows = filteredTicketsForRekap.map((t) => [
-      t.id,
-      new Date(t.createdAt).toLocaleDateString('id-ID'),
-      new Date(t.createdAt).toLocaleTimeString('id-ID'),
-      t.calledAt ? new Date(t.calledAt).toLocaleTimeString('id-ID') : '-',
-      t.completedAt ? new Date(t.completedAt).toLocaleTimeString('id-ID') : '-',
-      `"${t.boothName}"`,
-      t.ticketNumber,
-      t.status.toUpperCase(),
-    ]);
-
-    const csvContent = 'data:text/csv;charset=utf-8,\uFEFF' + [headers.join(','), ...rows.map((e) => e.join(','))].join('\n');
-    const encodedUri = encodeURI(csvContent);
-    const link = document.createElement('a');
-    link.setAttribute('href', encodedUri);
-    const filename = `Rekap_Antrian_Photobooth_${rekapPeriod.toUpperCase()}_${new Date().toISOString().slice(0, 10)}.csv`;
-    link.setAttribute('download', filename);
-    document.body.appendChild(link);
-    link.click();
-    document.body.removeChild(link);
-  };
+  const logoUrl = printSettings?.monitorLogoUrl;
 
   return (
-    <div className="space-y-6 pb-12">
-      {/* Top Banner & Quick Controls (Eye-Friendly Slate & Red Theme) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-3xl text-white shadow-xl border border-slate-800 relative overflow-hidden">
-        <div className="relative z-10">
-          <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 text-red-300 text-xs font-extrabold border border-red-800/80">
-              <Sparkles className="w-3.5 h-3.5 text-red-400" />
-              Panel Operator Studio
-            </span>
-            <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-black shadow-sm">
-              <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              Admin Aktif
-            </span>
-          </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
-            Dashboard Admin Photobooth
-            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
-          </h2>
-          <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl font-medium leading-relaxed">
-            Kelola panggilan antrian per booth, cetak tiket thermal, dan akses konfigurasi lengkap di menu Pengaturan.
-          </p>
-        </div>
-
-        {/* Action Controls */}
-        <div className="flex flex-wrap items-center gap-2.5 relative z-10">
-          {/* Main Settings Button */}
-          <button
-            id="btn-admin-settings"
-            onClick={() => handleOpenSettings('booths')}
-            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-lg shadow-red-600/25 border border-red-500/50 transition-all active:scale-95"
-            title="Pengaturan Booth, Label Thermal, dan Sistem"
-          >
-            <Sliders className="w-4 h-4" />
-            <span>Pengaturan</span>
-          </button>
-
-          {/* Logout Admin Button */}
-          <button
-            id="btn-admin-logout"
-            onClick={logoutAdmin}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all active:scale-95"
-            title="Keluar dari Dashboard Admin"
-          >
-            <LogOut className="w-4 h-4 text-red-400" />
-            <span>Keluar</span>
-          </button>
-        </div>
-      </div>
-
-      {/* Metrics Row */}
-      <div className="grid grid-cols-2 md:grid-cols-4 gap-3 sm:gap-4">
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Antrian Menunggu</p>
-            <h4 className="text-2xl font-black text-slate-900 font-mono mt-0.5">{totalWaiting}</h4>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-amber-50 text-amber-600 flex items-center justify-center font-bold">
-            <Users className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Dipanggil / Selesai</p>
-            <h4 className="text-2xl font-black text-red-600 font-mono mt-0.5">{totalCalled}</h4>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-red-50 text-red-600 flex items-center justify-center font-bold">
-            <Megaphone className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Total Tiket Hari Ini</p>
-            <h4 className="text-2xl font-black text-slate-900 font-mono mt-0.5">{totalPrinted}</h4>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-emerald-50 text-emerald-600 flex items-center justify-center font-bold">
-            <Printer className="w-5 h-5" />
-          </div>
-        </div>
-
-        <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex items-center justify-between">
-          <div>
-            <p className="text-[11px] font-extrabold text-slate-400 uppercase tracking-wider">Booth Aktif</p>
-            <h4 className="text-2xl font-black text-slate-900 font-mono mt-0.5">{booths.length}</h4>
-          </div>
-          <div className="w-10 h-10 rounded-2xl bg-rose-50 text-rose-600 flex items-center justify-center font-bold">
-            <Sparkles className="w-5 h-5" />
-          </div>
-        </div>
-      </div>
-
-      {/* Main Grid: Queue Columns per Booth */}
-      <div>
-        <div className="flex items-center justify-between mb-3">
-          <h3 className="font-extrabold text-slate-900 text-lg flex items-center gap-2">
-            Kolom Antrian Photobooth
-            <span className="text-xs bg-red-100 text-red-800 font-extrabold px-2.5 py-0.5 rounded-full">
-              {booths.length} Booth
-            </span>
-          </h3>
-          <p className="text-xs text-slate-500 hidden sm:block font-medium">
-            Tekan <strong className="font-bold text-red-600">CALL NEXT</strong> untuk memanggil & <strong className="font-bold text-slate-900">PRINT TICKET</strong> untuk mencetak.
-          </p>
-        </div>
-
-        {booths.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
-            {booths.map((booth) => (
-              <BoothCard key={booth.id} booth={booth} onEditBooth={handleEditBoothFromCard} />
-            ))}
-          </div>
-        ) : (
-          <div className="p-12 text-center bg-white rounded-2xl border border-slate-200">
-            <p className="text-sm text-slate-500 font-medium">Belum ada kolom booth antrian.</p>
-            <button
-              onClick={() => handleOpenSettings('booths')}
-              className="mt-3 px-4 py-2 bg-red-600 text-white rounded-xl text-xs font-bold"
-            >
-              Tambah Booth Pertama
-            </button>
-          </div>
-        )}
-      </div>
-
-      {/* Recent Activity Section ("Hari ini") */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-sm overflow-hidden">
-        <div className="p-4 border-b border-slate-100 flex items-center justify-between bg-slate-50/50">
-          <div className="flex items-center gap-2">
-            <History className="w-4 h-4 text-red-600" />
-            <h3 className="font-bold text-slate-900 text-sm">Recent Activity (Hari Ini)</h3>
-            <span className="text-xs text-slate-400">({logs.length} catatan)</span>
-          </div>
-
-          <div className="flex items-center gap-2">
-            {logs.length > 0 && (
-              <button
-                id="btn-clear-logs"
-                onClick={clearTodayLogs}
-                className="text-xs text-slate-400 hover:text-rose-600 font-bold transition-colors"
-              >
-                Bersihkan Log
-              </button>
-            )}
-          </div>
-        </div>
-
-        <div className="divide-y divide-slate-100 max-h-64 overflow-y-auto">
-          {logs.length > 0 ? (
-            logs.map((log) => {
-              let badgeColor = 'bg-slate-100 text-slate-700 border-slate-200';
-              if (log.action === 'CALL_NEXT') badgeColor = 'bg-red-100 text-red-800 border-red-200';
-              if (log.action === 'PRINT_TICKET') badgeColor = 'bg-emerald-100 text-emerald-800 border-emerald-200';
-              if (log.action === 'RECALL') badgeColor = 'bg-amber-100 text-amber-800 border-amber-200';
-              if (log.action === 'COMPLETE') badgeColor = 'bg-blue-100 text-blue-800 border-blue-200';
-
-              return (
-                <div key={log.id} className="p-3.5 hover:bg-slate-50/80 transition-colors flex items-center justify-between">
-                  <div className="flex items-center gap-3">
-                    <span className="text-xs font-mono font-bold text-slate-400 flex items-center gap-1">
-                      <Clock className="w-3 h-3 text-slate-400" />
-                      {log.timestamp}
-                    </span>
-                    <span className={`text-[10px] font-extrabold uppercase tracking-wider px-2 py-0.5 rounded border ${badgeColor}`}>
-                      {log.action.replace('_', ' ')}
-                    </span>
-                    <span className="text-xs font-medium text-slate-800">
-                      {log.details}
-                    </span>
-                  </div>
-
-                  {log.boothName && (
-                    <span className="text-xs font-bold text-slate-500 bg-slate-100 px-2 py-0.5 rounded-lg hidden sm:inline-block">
-                      {log.boothName}
-                    </span>
-                  )}
-                </div>
-              );
-            })
+    <div className="min-h-screen bg-slate-100/80 flex flex-col md:flex-row font-sans -m-4 sm:-m-6">
+      {/* MOBILE TOP BAR WITH HAMBURGER */}
+      <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
+        <div className="flex items-center gap-2.5">
+          {logoUrl ? (
+            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-white p-0.5" />
           ) : (
-            <div className="p-8 text-center text-xs text-slate-400 italic">
-              Belum ada aktivitas hari ini
+            <div className="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center font-bold text-white shadow-sm">
+              <Camera className="w-4 h-4" />
             </div>
           )}
+          <div>
+            <h1 className="font-black text-sm text-white tracking-tight">Admin Studio</h1>
+            <p className="text-[10px] text-red-400 font-extrabold uppercase">Photobooth System</p>
+          </div>
         </div>
+
+        <button
+          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+          className="p-2 bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition-colors"
+          aria-label="Toggle Menu"
+        >
+          {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+        </button>
       </div>
 
-      {/* NEW FEATURE: REKAPAN SELESAI (HARI INI, BULANAN, TAHUNAN) + EKSPOR EXCEL */}
-      <div className="bg-white rounded-2xl border border-slate-200/80 shadow-md p-6 space-y-5">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 pb-4 border-b border-slate-100">
-          <div>
-            <div className="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-red-100 text-red-800 text-[11px] font-extrabold mb-1">
-              <BarChart3 className="w-3.5 h-3.5" />
-              Laporan Rekapitulasi Sesi
-            </div>
-            <h3 className="text-lg font-black text-slate-900">Rekapan Selesai Photobooth</h3>
-            <p className="text-xs text-slate-500 font-medium">
-              Catatan jumlah pengunjung selesai per hari, bulan, dan tahun dengan fasilitas ekspor file Excel.
-            </p>
+      {/* MOBILE BACKDROP DRAWER */}
+      {isMobileSidebarOpen && (
+        <div
+          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
+          onClick={() => setIsMobileSidebarOpen(false)}
+        />
+      )}
+
+      {/* LEFT SIDEBAR NAVIGATION */}
+      <aside
+        className={`bg-slate-900 text-white flex-col justify-between z-50 shrink-0 transition-all duration-300 ${
+          isSidebarCollapsed ? 'w-20' : 'w-64'
+        } ${
+          isMobileSidebarOpen
+            ? 'fixed inset-y-0 left-0 flex shadow-2xl w-64'
+            : 'hidden md:flex sticky top-0 h-screen'
+        }`}
+      >
+        {/* SIDEBAR HEADER */}
+        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
+          <div className="flex items-center gap-3 overflow-hidden">
+            {logoUrl ? (
+              <img src={logoUrl} alt="Logo" className="w-9 h-9 rounded-xl object-contain bg-white p-1 shrink-0 shadow-sm" />
+            ) : (
+              <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white shrink-0 shadow-lg shadow-red-600/30">
+                <Camera className="w-5 h-5" />
+              </div>
+            )}
+            {!isSidebarCollapsed && (
+              <div className="truncate">
+                <h2 className="font-black text-sm tracking-tight text-white leading-tight truncate">
+                  Studio Admin
+                </h2>
+                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-400">
+                  <ShieldCheck className="w-3 h-3" /> Online
+                </span>
+              </div>
+            )}
           </div>
 
-          {/* Period Filter Tabs & Simple Download Button */}
-          <div className="flex flex-wrap items-center gap-2">
-            <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
-              <button
-                onClick={() => setRekapPeriod('daily')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  rekapPeriod === 'daily'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Hari Ini
-              </button>
-              <button
-                onClick={() => setRekapPeriod('monthly')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  rekapPeriod === 'monthly'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Bulan
-              </button>
-              <button
-                onClick={() => setRekapPeriod('yearly')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  rekapPeriod === 'yearly'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Tahun
-              </button>
-              <button
-                onClick={() => setRekapPeriod('all')}
-                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
-                  rekapPeriod === 'all'
-                    ? 'bg-red-600 text-white shadow-sm'
-                    : 'text-slate-600 hover:text-slate-900'
-                }`}
-              >
-                Semua
-              </button>
-            </div>
-
-            {/* Month Selector for 'monthly' */}
-            {rekapPeriod === 'monthly' && (
-              <select
-                value={selectedMonth}
-                onChange={(e) => setSelectedMonth(Number(e.target.value))}
-                className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-800 shadow-sm focus:ring-2 focus:ring-red-500 cursor-pointer"
-              >
-                {monthNames.map((m, idx) => (
-                  <option key={m} value={idx}>
-                    {m}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            {/* Year Selector for 'monthly' or 'yearly' */}
-            {(rekapPeriod === 'monthly' || rekapPeriod === 'yearly') && (
-              <select
-                value={selectedYear}
-                onChange={(e) => setSelectedYear(Number(e.target.value))}
-                className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-800 shadow-sm focus:ring-2 focus:ring-red-500 cursor-pointer"
-              >
-                {yearOptions.map((y) => (
-                  <option key={y} value={y}>
-                    {y}
-                  </option>
-                ))}
-              </select>
-            )}
-
-            <button
-              id="btn-export-excel"
-              onClick={handleExportExcelCSV}
-              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 transition-all active:scale-95"
-              title="Download Data Rekapan CSV"
-            >
-              <Download className="w-4 h-4" />
-              <span>Download</span>
-            </button>
-          </div>
+          <button
+            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
+            className="hidden md:flex p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors shrink-0"
+            title={isSidebarCollapsed ? "Sembunyikan / Munculkan Sidebar" : "Kecilkan Sidebar"}
+          >
+            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
+          </button>
         </div>
 
-        {/* Breakdown Per Booth Cards */}
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-          {booths.map((booth) => {
-            const boothTicketsInRekap = filteredTicketsForRekap.filter((t) => t.boothId === booth.id);
-            const boothCompleted = boothTicketsInRekap.filter((t) => t.status === 'completed').length;
-            const boothWaiting = boothTicketsInRekap.filter((t) => t.status === 'waiting').length;
+        {/* SIDEBAR MENU ITEMS */}
+        <div className="p-2 space-y-1 overflow-y-auto flex-1">
+          {!isSidebarCollapsed && (
+            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-3 py-1.5 block">
+              Menu Utama
+            </span>
+          )}
+
+          {navItems.map((item) => {
+            const Icon = item.icon;
+            const isActive = activeTab === item.id;
 
             return (
-              <div key={booth.id} className="p-4 bg-slate-50/70 rounded-2xl border border-slate-200 flex flex-col justify-between space-y-3">
-                <div className="flex items-center justify-between">
-                  <span className="font-extrabold text-slate-900 text-sm">{booth.name}</span>
-                  <span className="text-xs font-mono font-bold bg-white text-slate-700 px-2 py-0.5 rounded border border-slate-200">
-                    {booth.code}
-                  </span>
+              <button
+                key={item.id}
+                onClick={() => {
+                  setActiveTab(item.id);
+                  setIsMobileSidebarOpen(false);
+                }}
+                title={isSidebarCollapsed ? item.label : undefined}
+                className={`w-full p-2.5 rounded-2xl text-left transition-all flex items-center gap-3 group active:scale-95 ${
+                  isSidebarCollapsed ? 'justify-center' : ''
+                } ${
+                  isActive
+                    ? 'bg-red-600 text-white font-black shadow-lg shadow-red-600/25 border border-red-500/50'
+                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-bold'
+                }`}
+              >
+                <div
+                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                    isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-red-400'
+                  }`}
+                >
+                  <Icon className="w-4 h-4" />
                 </div>
-
-                <div className="grid grid-cols-2 gap-2 pt-1">
-                  <div className="bg-white p-3 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Selesai Sesi</span>
-                    <span className="text-2xl font-black text-emerald-600 font-mono">{boothCompleted}</span>
-                  </div>
-
-                  <div className="bg-white p-3 rounded-xl border border-slate-200">
-                    <span className="text-[10px] font-bold text-slate-400 uppercase block">Total Tiket</span>
-                    <span className="text-2xl font-black text-slate-900 font-mono">{boothTicketsInRekap.length}</span>
-                  </div>
-                </div>
-              </div>
+                {!isSidebarCollapsed && (
+                  <span className="text-xs font-black tracking-wide truncate">{item.label}</span>
+                )}
+              </button>
             );
           })}
         </div>
 
-        {/* Detailed Table of Transactions */}
-        <div className="border border-slate-200 rounded-2xl overflow-hidden">
-          <div className="bg-slate-100/70 p-3 text-xs font-bold text-slate-700 flex items-center justify-between border-b border-slate-200">
-            <span className="flex items-center gap-1.5">
-              <Calendar className="w-4 h-4 text-red-600" />
-              Daftar Transaksi ({rekapPeriod === 'daily' ? 'Hari Ini' : rekapPeriod === 'monthly' ? 'Bulan Ini' : 'Tahun Ini'})
-            </span>
-            <span className="text-slate-500 font-normal">
-              Total: {completedTicketsInRekap.length} Selesai dari {filteredTicketsForRekap.length} Tiket
-            </span>
-          </div>
-
-          <div className="overflow-x-auto max-h-60">
-            <table className="w-full text-left border-collapse text-xs">
-              <thead>
-                <tr className="bg-slate-50 text-slate-500 uppercase text-[10px] font-extrabold tracking-wider border-b border-slate-200">
-                  <th className="p-3">Nomor Tiket</th>
-                  <th className="p-3">Booth</th>
-                  <th className="p-3">Waktu Cetak</th>
-                  <th className="p-3">Waktu Dipanggil</th>
-                  <th className="p-3">Waktu Selesai</th>
-                  <th className="p-3">Status</th>
-                  <th className="p-3 text-center">Aksi</th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-slate-100 text-slate-800 font-medium">
-                {filteredTicketsForRekap.length > 0 ? (
-                  filteredTicketsForRekap.map((t) => (
-                    <tr key={t.id} className="hover:bg-slate-50/80 transition-colors">
-                      <td className="p-3 font-mono font-bold text-red-700 hover:underline cursor-pointer" onClick={() => {
-                        if (confirm(`Hapus antrian ${t.ticketNumber}?`)) {
-                          deleteTicket(t.id);
-                        }
-                      }}>
-                        {t.ticketNumber}
-                      </td>
-                      <td className="p-3 font-semibold">{t.boothName}</td>
-                      <td className="p-3 font-mono text-slate-500">
-                        {new Date(t.createdAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' })}
-                      </td>
-                      <td className="p-3 font-mono text-slate-500">
-                        {t.calledAt ? new Date(t.calledAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                      </td>
-                      <td className="p-3 font-mono text-slate-500">
-                        {t.completedAt ? new Date(t.completedAt).toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' }) : '-'}
-                      </td>
-                      <td className="p-3">
-                        <span
-                          className={`px-2 py-0.5 rounded text-[10px] font-extrabold uppercase ${
-                            t.status === 'completed'
-                              ? 'bg-emerald-100 text-emerald-800'
-                              : t.status === 'called'
-                              ? 'bg-red-100 text-red-800'
-                              : 'bg-amber-100 text-amber-800'
-                          }`}
-                        >
-                          {t.status}
-                        </span>
-                      </td>
-                      <td className="p-3 text-center">
-                        <button
-                          onClick={() => {
-                            if (confirm(`Apakah Anda yakin ingin menghapus antrian ${t.ticketNumber}?`)) {
-                              deleteTicket(t.id);
-                            }
-                          }}
-                          className="p-1.5 bg-rose-50 hover:bg-rose-100 text-rose-600 rounded-lg transition-colors border border-rose-200"
-                          title="Hapus Antrian"
-                        >
-                          <Trash2 className="w-3.5 h-3.5" />
-                        </button>
-                      </td>
-                    </tr>
-                  ))
-                ) : (
-                  <tr>
-                    <td colSpan={7} className="p-6 text-center text-slate-400 italic">
-                      Belum ada transaksi tiket tercatat pada periode ini.
-                    </td>
-                  </tr>
-                )}
-              </tbody>
-            </table>
-          </div>
+        {/* SIDEBAR FOOTER & LOGOUT BUTTON */}
+        <div className="p-3 border-t border-slate-800 bg-slate-950/50">
+          <button
+            id="btn-admin-logout"
+            onClick={logoutAdmin}
+            title={isSidebarCollapsed ? "LOG OUT" : undefined}
+            className={`w-full py-2.5 px-3 bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 text-slate-200 rounded-2xl text-xs font-black border border-slate-700/80 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm ${
+              isSidebarCollapsed ? 'justify-center' : ''
+            }`}
+          >
+            <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
+            {!isSidebarCollapsed && <span>LOG OUT</span>}
+          </button>
         </div>
-      </div>
+      </aside>
 
-      {/* Settings Modal Component */}
+      {/* MAIN CONTENT AREA */}
+      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden max-w-7xl mx-auto w-full">
+        {activeTab === 'beranda' && <BerandaView />}
+        {activeTab === 'operasional' && (
+          <OperasionalView
+            onOpenSettings={handleOpenSettingsModal}
+            onEditBooth={handleEditBoothFromCard}
+          />
+        )}
+        {activeTab === 'manajemen' && <ManajemenView />}
+        {activeTab === 'media_display' && <MediaDisplayView />}
+        {activeTab === 'setting' && <SettingView />}
+        {activeTab === 'laporan' && <LaporanView />}
+      </main>
+
+      {/* Legacy Settings Modal Bridge if needed */}
       <SettingsModal
         isOpen={isSettingsOpen}
         onClose={() => setIsSettingsOpen(false)}
-        initialTab={settingsTab}
+        initialTab={settingsModalTab}
       />
 
       {/* Ticket Thermal Print Preview Modal */}

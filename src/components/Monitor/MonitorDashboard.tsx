@@ -3,7 +3,7 @@ import { useQueue } from '../../context/QueueContext';
 import { Users, Megaphone, Maximize2, Minimize2, Sparkles, Camera } from 'lucide-react';
 
 export const MonitorDashboard: React.FC = () => {
-  const { booths, tickets, printSettings } = useQueue();
+  const { booths, tickets, lastCalledTicket, printSettings } = useQueue();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
