@@ -1,0 +1,61 @@
+{
+  "entities": {
+    "tickets": {
+      "title": "Tickets",
+      "description": "Photobooth queue tickets",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "ticketNumber": { "type": "string" },
+        "customerName": { "type": "string" },
+        "boothId": { "type": "string" },
+        "boothName": { "type": "string" },
+        "photoPackage": { "type": "string" },
+        "status": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "calledAt": { "type": "string" },
+        "completedAt": { "type": "string" },
+        "counterNumber": { "type": "number" }
+      },
+      "required": ["id", "ticketNumber", "customerName", "boothId", "boothName", "status", "timestamp"]
+    },
+    "booths": {
+      "title": "Booths",
+      "description": "Photobooth booths",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "name": { "type": "string" },
+        "code": { "type": "string" },
+        "status": { "type": "string" },
+        "currentTicketNumber": { "type": "string" },
+        "activePackage": { "type": "string" },
+        "totalServed": { "type": "number" }
+      },
+      "required": ["id", "name", "code", "status"]
+    },
+    "logs": {
+      "title": "Activity Logs",
+      "description": "Queue system activity logs",
+      "type": "object",
+      "properties": {
+        "id": { "type": "string" },
+        "timestamp": { "type": "string" },
+        "action": { "type": "string" },
+        "details": { "type": "string" },
+        "type": { "type": "string" }
+      },
+      "required": ["id", "timestamp", "action", "details", "type"]
+    },
+    "config": {
+      "title": "App Config",
+      "description": "System settings and admin pin",
+      "type": "object",
+      "properties": {
+        "adminPin": { "type": "string" },
+        "printSettings": { "type": "object" },
+        "lastCalledTicket": { "type": "object" }
+      }
+    }
+  }
+}
