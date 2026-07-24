@@ -1,6 +1,6 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQueue } from '../../context/QueueContext';
-import { Bell, Volume2, Clock, Search, QrCode, Sparkles, CheckCircle2 } from 'lucide-react';
+import { Bell, Volume2, Clock, Search, QrCode, Sparkles, CheckCircle2, Smartphone, RefreshCw, Users, Camera } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playChimeSound } from '../../utils/audio';
 
@@ -18,7 +18,7 @@ export const CustomerDashboard: React.FC = () => {
   const [inputTicket, setInputTicket] = useState('');
   const [hasCelebrated, setHasCelebrated] = useState(false);
 
-  // Unlock Web Audio context on user interaction
+  // Unlock Web Audio & Speech synthesis context on user interaction
   useEffect(() => {
     const handleUserInteraction = () => {
       try {
@@ -37,7 +37,7 @@ export const CustomerDashboard: React.FC = () => {
     };
   }, []);
 
-  // Parse ticket parameter from URL or hash on load & when tickets update
+  // Parse ticket parameter from URL or hash on load
   useEffect(() => {
     if (typeof window === 'undefined') return;
     const searchParams = new URLSearchParams(window.location.search);
@@ -74,7 +74,7 @@ export const CustomerDashboard: React.FC = () => {
     }
   }, [tickets, booths, selectedTicketForCustomer, setSelectedTicketForCustomer]);
 
-  // Synchronize live customer ticket from live tickets array so status changes (e.g. 'called') are instantly reactive
+  // Synchronize live customer ticket from live tickets array
   const currentCustomerTicket = useMemo(() => {
     if (!selectedTicketForCustomer) return null;
     return (
@@ -114,19 +114,30 @@ export const CustomerDashboard: React.FC = () => {
   // Check if customer ticket is CALLED right now!
   const isMyTurn = currentCustomerTicket && currentCustomerTicket.status === 'called';
 
-  // Trigger celebration & chime audio whenever my ticket is called by Admin (or recalled)!
+  // Helper to trigger device vibration (Haptic Feedback)
+  const triggerVibration = () => {
+    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
+      try {
+        navigator.vibrate([300, 100, 300, 100, 500, 100, 500]);
+      } catch (err) {
+        console.log('Device vibration error:', err);
+      }
+    }
+  };
+
+  // Trigger celebration, sound & vibration whenever ticket is called
   useEffect(() => {
     if (!currentCustomerTicket) return;
 
-    // Direct check if my ticket status is 'called'
     if (isMyTurn && !hasCelebrated) {
       setHasCelebrated(true);
       playChimeSound();
+      triggerVibration();
       try {
         confetti({
-          particleCount: 100,
-          spread: 80,
-          origin: { y: 0.6 },
+          particleCount: 120,
+          spread: 90,
+          origin: { y: 0.5 },
         });
       } catch (err) {
         console.log(err);
@@ -134,7 +145,7 @@ export const CustomerDashboard: React.FC = () => {
     }
   }, [isMyTurn, currentCustomerTicket, hasCelebrated]);
 
-  // React directly when Admin calls next
+  // React directly when Admin calls next ticket matching current customer
   useEffect(() => {
     if (!lastCalledTicket || !currentCustomerTicket) return;
 
@@ -144,11 +155,12 @@ export const CustomerDashboard: React.FC = () => {
 
     if (isMatch) {
       playChimeSound();
+      triggerVibration();
       try {
         confetti({
-          particleCount: 100,
-          spread: 80,
-          origin: { y: 0.6 },
+          particleCount: 120,
+          spread: 90,
+          origin: { y: 0.5 },
         });
       } catch (err) {
         console.log(err);
@@ -181,183 +193,205 @@ export const CustomerDashboard: React.FC = () => {
   const handleToggleNotify = () => {
     if (!soundEnabled) {
       playChimeSound();
+      triggerVibration();
       setSoundEnabled(true);
     } else {
       setSoundEnabled(false);
     }
   };
 
+  const handleResetTicket = () => {
+    setSelectedTicketForCustomer(null);
+    setInputTicket('');
+    setHasCelebrated(false);
+  };
+
   return (
-    <div className="max-w-2xl mx-auto space-y-6 pb-12">
-      {/* Search / Lookup Form - Always available or collapsible when ticket selected */}
+    <div className="max-w-xl mx-auto space-y-5 pb-12 font-sans">
+      {/* SEARCH / LOOKUP TICKET CARD */}
       {!currentCustomerTicket ? (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/80 shadow-md space-y-5 text-center">
-          <div className="w-14 h-14 rounded-2xl bg-red-100 border border-red-200 text-red-600 flex items-center justify-center mx-auto shadow-sm">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xl space-y-5 text-center">
+          <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-inner">
             <QrCode className="w-7 h-7" />
           </div>
 
           <div>
-            <h3 className="font-extrabold text-slate-900 text-xl sm:text-2xl">Cek Status Antrian Kamu</h3>
-            <p className="text-xs sm:text-sm text-slate-500 font-medium mt-1">
-              Masukkan nomor tiket kamu atau scan QR Code pada struk fisik antrian.
+            <h2 className="font-black text-slate-900 text-2xl tracking-tight">Cek Antrian Anda</h2>
+            <p className="text-xs text-slate-500 font-medium mt-1">
+              Ketik nomor tiket di bawah ini untuk melihat estimasi waktu & panggilan giliran.
             </p>
           </div>
 
-          <form onSubmit={handleSearchTicket} className="flex flex-col sm:flex-row gap-2 max-w-md mx-auto pt-2">
-            <div className="relative flex-1">
-              <Search className="w-4 h-4 text-slate-400 absolute left-3.5 top-3.5" />
+          <form onSubmit={handleSearchTicket} className="space-y-3 pt-1">
+            <div className="relative">
+              <Search className="w-5 h-5 text-slate-400 absolute left-4 top-3.5" />
               <input
                 type="text"
                 value={inputTicket}
                 onChange={(e) => setInputTicket(e.target.value)}
-                placeholder="Contoh: VIN002..."
-                className="w-full pl-10 pr-3 py-3 bg-slate-50 border border-slate-200 rounded-xl text-sm font-mono font-black uppercase focus:ring-2 focus:ring-red-600 focus:bg-white transition-all shadow-inner"
+                placeholder="Masukkan Nomor (contoh: VIN001)..."
+                className="w-full pl-12 pr-4 py-3.5 bg-slate-50 border border-slate-300 rounded-2xl text-base font-mono font-black uppercase focus:ring-2 focus:ring-red-600 focus:bg-white transition-all shadow-inner text-slate-900"
               />
             </div>
             <button
               type="submit"
-              className="px-6 py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-xl shadow-md shadow-red-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95"
+              className="w-full py-3.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-sm rounded-2xl shadow-lg shadow-red-600/25 transition-all active:scale-95 flex items-center justify-center gap-2"
             >
-              <span>Cek Tiket</span>
+              <span>Lihat Status Antrian</span>
             </button>
           </form>
         </div>
       ) : (
-        /* CUSTOMER TICKET STATUS CARD */
+        /* MINIMALIST CUSTOMER TICKET DISPLAY CARD */
         <div className="space-y-4">
           {/* Main Status Display */}
           <div
-            className={`p-6 sm:p-8 rounded-3xl border transition-all text-center relative overflow-hidden shadow-xl ${
+            className={`p-6 sm:p-8 rounded-3xl border transition-all text-center relative overflow-hidden shadow-2xl ${
               isMyTurn
-                ? 'bg-gradient-to-b from-emerald-50 via-emerald-100 to-emerald-50 border-emerald-400 text-emerald-950 ring-4 ring-emerald-500/30 animate-pulse'
+                ? 'bg-gradient-to-b from-emerald-50 via-emerald-100 to-emerald-50 border-emerald-500 text-emerald-950 ring-4 ring-emerald-500/30'
                 : currentCustomerTicket.status === 'completed'
                 ? 'bg-slate-50 border-slate-200 text-slate-700'
-                : 'bg-gradient-to-b from-red-50/60 to-white border-red-200 text-slate-900'
+                : 'bg-white border-slate-200 text-slate-900'
             }`}
           >
-            {/* Status Tag */}
+            {/* Status Badge Top Header */}
             <div className="inline-block mb-3">
               {isMyTurn ? (
-                <span className="px-4 py-1.5 rounded-full text-xs sm:text-sm font-black bg-emerald-600 text-white uppercase tracking-wider shadow-lg animate-bounce inline-flex items-center gap-1.5">
+                <span className="px-5 py-2 rounded-full text-xs sm:text-sm font-black bg-emerald-600 text-white uppercase tracking-wider shadow-lg animate-bounce inline-flex items-center gap-2">
                   <Sparkles className="w-4 h-4" />
-                  GILIRAN KAMU TIBA! SILAKAN MASUK BOOTH!
+                  GILIRAN ANDA TIBA! SILAKAN MASUK BOOTH
                 </span>
               ) : currentCustomerTicket.status === 'completed' ? (
-                <span className="px-4 py-1.5 rounded-full text-xs font-bold bg-slate-200 text-slate-700 inline-flex items-center gap-1.5">
-                  <CheckCircle2 className="w-3.5 h-3.5 text-slate-500" />
+                <span className="px-4 py-1.5 rounded-full text-xs font-black bg-slate-200 text-slate-700 inline-flex items-center gap-1.5">
+                  <CheckCircle2 className="w-4 h-4 text-emerald-600" />
                   SESI PHOTOBOOTH SELESAI
                 </span>
               ) : (
-                <span className="px-4 py-1.5 rounded-full text-xs font-black bg-red-100 text-red-800 border border-red-300 shadow-sm">
+                <span className="px-4 py-1.5 rounded-full text-xs font-black bg-red-100 text-red-800 border border-red-300 shadow-sm inline-flex items-center gap-1.5">
+                  <Clock className="w-3.5 h-3.5 text-red-600" />
                   MENUNGGU GILIRAN
                 </span>
               )}
             </div>
 
-            {/* Ticket Big Number */}
-            <div className="my-3">
+            {/* Ticket Number Big Focal Display */}
+            <div className="my-2">
               <span className="text-xs font-extrabold text-slate-400 uppercase tracking-widest block">
-                NOMOR TIKET KAMU
+                NOMOR TIKET ANDA
               </span>
-              <span className="text-6xl sm:text-7xl font-black font-mono tracking-tight text-red-700 my-1 block">
+              <span className="text-6xl sm:text-7xl font-black font-mono tracking-tight text-red-600 my-1 block drop-shadow-sm">
                 {currentCustomerTicket.ticketNumber}
               </span>
-              <span className="text-xs font-extrabold uppercase text-slate-900 bg-white px-4 py-1 rounded-full border border-slate-200 inline-block shadow-sm">
+              <span className="text-xs font-extrabold uppercase text-slate-800 bg-slate-100 px-4 py-1 rounded-full border border-slate-200 inline-block shadow-sm">
                 {currentCustomerTicket.boothName}
               </span>
             </div>
 
-            {/* Current Called Ticket & Queue Position */}
+            {/* Status Statistics */}
             {currentCustomerTicket.status === 'completed' ? (
-              <div className="mt-6 pt-4 border-t border-slate-200 bg-emerald-50/90 p-4 rounded-2xl border border-emerald-200 text-center space-y-1">
-                <p className="font-black text-emerald-900 text-sm">Sesi Foto Anda Telah Selesai</p>
+              <div className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
+                <p className="font-black text-emerald-900 text-sm">Sesi Foto Anda Selesai</p>
                 <p className="text-xs text-emerald-700 font-medium">
-                  Terima kasih telah mengabadikan momen seru bersama kami!
+                  Terima kasih telah mengabadikan momen bersama kami!
                 </p>
               </div>
             ) : (
-              <div className="mt-6 pt-4 border-t border-slate-200 grid grid-cols-2 gap-3 text-left bg-white/80 p-4 rounded-2xl border border-slate-100 shadow-sm">
+              <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-center bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
                 <div>
-                  <span className="text-[11px] font-extrabold text-slate-400 uppercase block">
-                    SEDANG DIPANGGIL
+                  <span className="text-[11px] font-bold text-slate-400 uppercase block">
+                    DIPANGGIL SAAT INI
                   </span>
-                  <span className="text-2xl sm:text-3xl font-black font-mono text-slate-900">
+                  <span className="text-2xl font-black font-mono text-slate-900">
                     {currentCalledTicketInBooth ? currentCalledTicketInBooth.ticketNumber : '---'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-[11px] font-extrabold text-slate-400 uppercase block">
-                    ANTRIAN DI DEPAN KAMU
+                  <span className="text-[11px] font-bold text-slate-400 uppercase block">
+                    ANTRIAN DI DEPAN
                   </span>
-                  <span className="text-2xl sm:text-3xl font-black text-red-600 flex items-center gap-1">
-                    {isMyTurn ? '0' : `${ticketsAhead} Orang`}
+                  <span className="text-2xl font-black text-red-600">
+                    {isMyTurn ? '0 Orang' : `${ticketsAhead} Orang`}
                   </span>
                 </div>
               </div>
             )}
 
-            {/* Estimated Wait Time */}
+            {/* Estimated Wait Time Banner */}
             {!isMyTurn && currentCustomerTicket.status === 'waiting' && (
-              <div className="mt-4 p-3.5 bg-red-50 rounded-2xl border border-red-100 flex items-center justify-center gap-2 text-xs sm:text-sm font-extrabold text-red-800">
-                <Clock className="w-4 h-4 text-red-600" />
+              <div className="mt-3 p-3 bg-red-50/80 rounded-2xl border border-red-100 text-center text-xs font-extrabold text-red-800 flex items-center justify-center gap-2">
+                <Clock className="w-4 h-4 text-red-600 shrink-0" />
                 <span>
-                  Estimasi waktu tunggu:{' '}
+                  Estimasi tunggu:{' '}
                   {estimatedWaitMinutes > 0 ? `~${estimatedWaitMinutes} menit` : 'Sebentar lagi dipanggil!'}
                 </span>
               </div>
             )}
+
+            {/* Reset / Search Another Ticket Button */}
+            <button
+              onClick={handleResetTicket}
+              className="mt-5 text-xs text-slate-500 hover:text-slate-800 font-bold underline inline-flex items-center gap-1.5 transition-colors"
+            >
+              <RefreshCw className="w-3.5 h-3.5" />
+              <span>Ganti / Cari Tiket Lain</span>
+            </button>
           </div>
 
-          {/* Audio Notification Toggle Bar */}
-          <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
+          {/* Sound & Vibration Notification Toggle Bar */}
+          <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
-                soundEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
-              }`}>
+              <div
+                className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
+                  soundEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}
+              >
                 <Bell className="w-5 h-5" />
               </div>
-              <div>
-                <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara Panggilan</h4>
-                <p className="text-[11px] text-slate-500 font-medium">
+              <div className="text-left">
+                <div className="flex items-center gap-1.5">
+                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara & Getar HP</h3>
+                  <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
+                    <Smartphone className="w-3 h-3" /> Getar
+                  </span>
+                </div>
+                <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                   {soundEnabled
-                    ? 'Notifikasi suara AKTIF. Browser akan membunyikan bel saat nomor dipanggil.'
-                    : 'Aktifkan agar browser membunyikan bel saat nomor dipanggil.'}
+                    ? 'Suara & getar HP AKTIF. HP akan berbunyi & bergetar saat nomor Anda dipanggil.'
+                    : 'Aktifkan agar HP berbunyi & bergetar saat giliran tiba.'}
                 </p>
               </div>
             </div>
 
-            <div className="flex items-center gap-2 w-full sm:w-auto">
-              <button
-                id="btn-customer-toggle-notify"
-                onClick={handleToggleNotify}
-                className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                  soundEnabled
-                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
-                    : 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20'
-                }`}
-              >
-                <Volume2 className="w-4 h-4" />
-                <span>{soundEnabled ? 'Suara Aktif' : 'Aktifkan Suara'}</span>
-              </button>
-            </div>
+            <button
+              id="btn-customer-toggle-notify"
+              onClick={handleToggleNotify}
+              className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 shrink-0 ${
+                soundEnabled
+                  ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
+                  : 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20'
+              }`}
+            >
+              <Volume2 className="w-4 h-4" />
+              <span>{soundEnabled ? 'Aktif' : 'Aktifkan Suara & Getar'}</span>
+            </button>
           </div>
         </div>
       )}
 
-      {/* Summary of All Booth Queues */}
-      <div className="p-5 bg-white rounded-2xl border border-slate-200/80 shadow-sm space-y-3">
-        <div className="flex items-center justify-between">
-          <h4 className="font-black text-slate-900 text-xs uppercase tracking-wider">
+      {/* Ringkasan Antrian Semua Booth */}
+      <div className="p-5 bg-white rounded-3xl border border-slate-200/90 shadow-sm space-y-3">
+        <div className="flex items-center justify-between pb-2 border-b border-slate-100">
+          <h3 className="font-black text-slate-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+            <Users className="w-4 h-4 text-red-600" />
             Ringkasan Antrian Semua Booth
-          </h4>
-          <span className="text-[11px] font-bold text-slate-400">Status Live Studio</span>
+          </h3>
+          <span className="text-[10px] font-bold text-slate-400 uppercase">Live Update</span>
         </div>
 
         {tickets.length === 0 ? (
-          <div className="p-6 bg-slate-50 rounded-2xl border border-dashed border-slate-300 text-center space-y-1">
-            <p className="font-extrabold text-slate-700 text-sm">Belum Ada Antrian Aktif</p>
-            <p className="text-xs text-slate-500">Seluruh antrian sedang kosong atau belum ada tiket baru.</p>
+          <div className="py-6 bg-slate-50 rounded-2xl border border-dashed border-slate-200 text-center text-xs text-slate-500 font-medium">
+            Belum ada antrian aktif saat ini.
           </div>
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
@@ -366,10 +400,10 @@ export const CustomerDashboard: React.FC = () => {
               const waitCount = tickets.filter((t) => t.boothId === b.id && t.status === 'waiting').length;
 
               return (
-                <div key={b.id} className="p-4 bg-slate-50/90 rounded-2xl border border-slate-200/90 space-y-2">
+                <div key={b.id} className="p-3.5 bg-slate-50 rounded-2xl border border-slate-200 space-y-2">
                   <div className="flex items-center justify-between">
                     <span className="text-xs font-black text-slate-900 block truncate">{b.name}</span>
-                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" title="Booth Aktif" />
+                    <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
                   </div>
                   <div className="flex items-center justify-between pt-1 border-t border-slate-200/60">
                     <div>
@@ -392,4 +426,5 @@ export const CustomerDashboard: React.FC = () => {
     </div>
   );
 };
+
 

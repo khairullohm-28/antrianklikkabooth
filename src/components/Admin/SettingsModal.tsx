@@ -158,6 +158,27 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     reader.readAsDataURL(file);
   };
 
+  const handleMonitorLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const file = e.target.files?.[0];
+    if (!file) return;
+
+    if (file.size > 2 * 1024 * 1024) {
+      alert('Ukuran file logo terlalu besar. Harap gunakan gambar di bawah 2MB.');
+      return;
+    }
+
+    const reader = new FileReader();
+    reader.onload = (event) => {
+      if (event.target?.result) {
+        setLocalPrintSettings((prev) => ({
+          ...prev,
+          monitorLogoUrl: event.target?.result as string,
+        }));
+      }
+    };
+    reader.readAsDataURL(file);
+  };
+
   const handleSaveScriptConfig = () => {
     updateAppsScriptConfig(localScriptConfig);
     setSaveSuccess(true);
@@ -923,6 +944,84 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
                             </div>
                           </>
                         )}
+                      </div>
+                    </div>
+
+                    {/* 6. PENGATURAN TAMPILAN TV / MONITOR */}
+                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+                      <h5 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
+                        <Sparkles className="w-4 h-4 text-red-600" />
+                        6. Tampilan TV Monitor Studio
+                      </h5>
+
+                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                        {/* Logo Monitor */}
+                        <div>
+                          <label className="font-semibold text-slate-700 block mb-1">
+                            Logo Perusahaan di TV Monitor
+                          </label>
+                          <div className="flex gap-2 mb-1.5">
+                            <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-white border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:border-red-500 cursor-pointer transition-colors">
+                              <Upload className="w-3.5 h-3.5 text-red-600" />
+                              <span>Upload Logo TV</span>
+                              <input
+                                type="file"
+                                accept="image/*"
+                                onChange={handleMonitorLogoUpload}
+                                className="hidden"
+                              />
+                            </label>
+                            {localPrintSettings.monitorLogoUrl && (
+                              <button
+                                type="button"
+                                onClick={() => setLocalPrintSettings({ ...localPrintSettings, monitorLogoUrl: '' })}
+                                className="px-2 py-1 bg-red-100 text-red-700 font-bold rounded-xl text-[11px]"
+                              >
+                                Hapus
+                              </button>
+                            )}
+                          </div>
+                          <input
+                            type="text"
+                            value={localPrintSettings.monitorLogoUrl || ''}
+                            onChange={(e) =>
+                              setLocalPrintSettings({ ...localPrintSettings, monitorLogoUrl: e.target.value })
+                            }
+                            placeholder="Atau tempel URL gambar logo..."
+                            className="w-full px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500"
+                          />
+                        </div>
+
+                        {/* Judul Brand Monitor */}
+                        <div>
+                          <label className="font-semibold text-slate-700 block mb-1">
+                            Judul Header Monitor TV
+                          </label>
+                          <input
+                            type="text"
+                            value={localPrintSettings.monitorBrandTitle || ''}
+                            onChange={(e) =>
+                              setLocalPrintSettings({ ...localPrintSettings, monitorBrandTitle: e.target.value })
+                            }
+                            placeholder="LAYAR ANTRIAN PHOTOBOOTH"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl focus:ring-2 focus:ring-red-500"
+                          />
+                        </div>
+                      </div>
+
+                      <div>
+                        <label className="font-semibold text-slate-700 text-xs block mb-1">
+                          Teks Running / Running Announcement (Selamat Datang)
+                        </label>
+                        <textarea
+                          rows={2}
+                          value={localPrintSettings.monitorWelcomeText || ''}
+                          onChange={(e) =>
+                            setLocalPrintSettings({ ...localPrintSettings, monitorWelcomeText: e.target.value })
+                          }
+                          placeholder="📸 Selamat datang di Photobooth! Silakan bersantai & perhatikan nomor antrian..."
+                          className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500"
+                        />
                       </div>
                     </div>
                   </div>

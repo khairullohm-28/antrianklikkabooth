@@ -1,9 +1,9 @@
 import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../context/QueueContext';
-import { Users, Megaphone, Maximize2, Minimize2, Sparkles, CheckCircle2, RefreshCw } from 'lucide-react';
+import { Users, Megaphone, Maximize2, Minimize2, Sparkles, Camera } from 'lucide-react';
 
 export const MonitorDashboard: React.FC = () => {
-  const { booths, tickets, lastCalledTicket, appsScriptConfig } = useQueue();
+  const { booths, tickets, printSettings } = useQueue();
 
   const [currentTime, setCurrentTime] = useState(new Date());
   const [isFullscreen, setIsFullscreen] = useState(false);
@@ -36,9 +36,12 @@ export const MonitorDashboard: React.FC = () => {
   };
 
   // Format Date dd/mm/yyyy hh:mm:ss
-  const formattedDateStr = `${String(currentTime.getDate()).padStart(2, '0')}/${String(
-    currentTime.getMonth() + 1
-  ).padStart(2, '0')}/${currentTime.getFullYear()}`;
+  const formattedDateStr = currentTime.toLocaleDateString('id-ID', {
+    weekday: 'long',
+    day: 'numeric',
+    month: 'long',
+    year: 'numeric',
+  });
 
   const formattedTimeStr = currentTime.toLocaleTimeString('id-ID', {
     hour: '2-digit',
@@ -51,67 +54,93 @@ export const MonitorDashboard: React.FC = () => {
     .filter((t) => t.status === 'waiting')
     .sort((a, b) => a.createdAt.localeCompare(b.createdAt));
 
+  const welcomeMessage =
+    printSettings.monitorWelcomeText ||
+    '📸 Selamat datang di Photobooth! Silakan bersantai & perhatikan nomor antrian Anda di layar. Persiapkan pose terbaik Anda! ✨';
+
+  const brandTitle = printSettings.monitorBrandTitle || printSettings.branchName || 'LAYAR ANTRIAN PHOTOBOOTH';
+
   return (
-    <div className="flex-1 w-full min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-5 lg:p-6 flex flex-col justify-between space-y-3 sm:space-y-4 select-none overflow-hidden">
-      {/* TOP HEADER BAR (TV MONITOR) */}
-      <div className="bg-slate-900/90 rounded-2xl sm:rounded-3xl p-3 sm:p-4 border border-slate-800/90 shadow-2xl flex items-center justify-between gap-4 shrink-0">
-        {/* Center Marquee Announcement Banner */}
-        <div className="flex flex-1 max-w-2xl bg-slate-950/80 px-4 py-2 rounded-2xl border border-slate-800/90 overflow-hidden text-xs font-bold text-amber-400 items-center gap-2">
-          <Sparkles className="w-4 h-4 shrink-0 text-amber-400 z-10 bg-slate-950" />
+    <div className="flex-1 w-full min-h-screen bg-slate-950 text-slate-100 p-3 sm:p-5 lg:p-6 flex flex-col justify-between space-y-3 sm:space-y-4 select-none overflow-hidden font-sans">
+      {/* TOP HEADER BAR (TV DISPLAY MONITOR) */}
+      <div className="bg-slate-900/95 rounded-2xl sm:rounded-3xl p-3.5 sm:p-5 border border-slate-800 shadow-2xl flex flex-col md:flex-row items-center justify-between gap-4 shrink-0">
+        {/* Brand / Custom Logo + Marquee Announcement */}
+        <div className="flex items-center gap-3.5 w-full md:w-auto">
+          {printSettings.monitorLogoUrl ? (
+            <img
+              src={printSettings.monitorLogoUrl}
+              alt="Logo Perusahaan"
+              className="w-12 h-12 rounded-2xl object-contain bg-white/10 p-1 border border-slate-700 shadow-lg shrink-0"
+            />
+          ) : (
+            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center font-black shadow-lg shadow-red-600/30 shrink-0">
+              <Camera className="w-6 h-6" />
+            </div>
+          )}
+          <div>
+            <h1 className="text-xl sm:text-2xl font-black tracking-tight text-white flex items-center gap-2">
+              {brandTitle}
+            </h1>
+            <p className="text-xs text-slate-400 font-semibold">{formattedDateStr}</p>
+          </div>
+        </div>
+
+        {/* Center Running Text / Announcement */}
+        <div className="hidden lg:flex flex-1 max-w-xl bg-slate-950/90 px-4 py-2.5 rounded-2xl border border-slate-800/90 overflow-hidden text-sm font-extrabold text-amber-300 items-center gap-2 shadow-inner">
+          <Sparkles className="w-5 h-5 shrink-0 text-amber-400 z-10 bg-slate-950" />
           <div className="w-full overflow-hidden relative">
-            <div className="animate-marquee tracking-wide text-slate-200">
-              ✨ Selamat Datang di Klikka Photobooth! Terima kasih telah berkunjung. Silakan bersantai & perhatikan panggilan nomor antrian Anda di layar. Selamat mengabadikan momen seru! 📸
+            <div className="animate-marquee tracking-wide whitespace-nowrap text-slate-200">
+              {welcomeMessage}
             </div>
           </div>
         </div>
 
-        {/* Clock & Fullscreen Action Bar */}
-        <div className="flex items-center gap-2 sm:gap-3 shrink-0">
-          <div className="bg-slate-950 px-4 py-1.5 rounded-2xl border border-slate-800 flex items-baseline gap-2 text-right">
-            <span className="text-2xl sm:text-3xl font-black font-mono text-red-500 tracking-tight">
+        {/* Right Controls: Clock & Action Buttons */}
+        <div className="flex items-center justify-between md:justify-end gap-3 w-full md:w-auto shrink-0">
+          <div className="bg-slate-950 px-5 py-2 rounded-2xl border border-slate-800 shadow-inner flex items-baseline gap-2 text-right">
+            <span className="text-3xl sm:text-4xl font-black font-mono text-red-500 tracking-tight drop-shadow-[0_0_12px_rgba(239,68,68,0.4)]">
               {formattedTimeStr}
-            </span>
-            <span className="text-xs text-slate-400 font-bold font-mono hidden sm:inline">
-              {formattedDateStr}
             </span>
           </div>
 
-          {/* Fullscreen Toggle Button (Icon Only) */}
-          <button
-            onClick={toggleFullscreen}
-            className="p-2.5 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white rounded-2xl border border-slate-700 transition-all flex items-center justify-center shadow-md"
-            title={isFullscreen ? 'Keluar Layar Penuh' : 'Tampilkan Layar Penuh (TV)'}
-          >
-            {isFullscreen ? (
-              <Minimize2 className="w-5 h-5 text-amber-400" />
-            ) : (
-              <Maximize2 className="w-5 h-5 text-emerald-400" />
-            )}
-          </button>
+          <div className="flex items-center gap-2">
+            {/* Fullscreen Toggle Button */}
+            <button
+              onClick={toggleFullscreen}
+              className="p-3 bg-slate-800 hover:bg-slate-700 active:scale-95 text-white rounded-2xl border border-slate-700 transition-all flex items-center justify-center shadow-md"
+              title={isFullscreen ? 'Keluar Layar Penuh' : 'Tampilkan Layar Penuh (TV)'}
+            >
+              {isFullscreen ? (
+                <Minimize2 className="w-5 h-5 text-amber-400" />
+              ) : (
+                <Maximize2 className="w-5 h-5 text-emerald-400" />
+              )}
+            </button>
+          </div>
         </div>
       </div>
 
-      {/* MAIN CONTENT AREA (LANDSCAPE DOMINANT GRID) */}
+      {/* MAIN CONTENT AREA */}
       <div className="flex-1 grid grid-cols-1 lg:grid-cols-12 gap-3 sm:gap-4 min-h-0">
-        {/* LEFT / MAIN SECTION: BOOTHS DIPANGGIL (DOMINANT 9 COLS) */}
-        <div className="lg:col-span-9 flex flex-col justify-between space-y-2 sm:space-y-3">
+        {/* LEFT / MAIN SECTION: BOOTHS DIPANGGIL (DOMINANT 8 or 9 COLS) */}
+        <div className="lg:col-span-8 xl:col-span-9 flex flex-col justify-between space-y-2 sm:space-y-3">
           <div className="flex items-center justify-between pb-1 border-b border-slate-800/80 shrink-0">
-            <h3 className="font-black text-white text-base sm:text-xl tracking-wider flex items-center gap-2">
-              <Megaphone className="w-6 h-6 text-red-500 animate-pulse" />
-              <span>SEDANG DIPANGGIL SAAT INI</span>
-            </h3>
+            <h2 className="font-black text-white text-lg sm:text-2xl tracking-wider flex items-center gap-2.5">
+              <Megaphone className="w-7 h-7 text-red-500 animate-pulse" />
+              <span>SEDANG DIPANGGIL</span>
+            </h2>
           </div>
 
-          {/* Dominant Booth Cards Container */}
+          {/* Dominant Booth Cards Grid */}
           <div
-            className={`flex-1 grid gap-2.5 sm:gap-3.5 ${
+            className={`flex-1 grid gap-3 sm:gap-4 ${
               booths.length === 1
                 ? 'grid-cols-1'
                 : booths.length === 2
-                ? 'grid-cols-1 sm:grid-cols-2'
+                ? 'grid-cols-1 md:grid-cols-2'
                 : booths.length === 3
-                ? 'grid-cols-1 sm:grid-cols-3'
-                : 'grid-cols-2 lg:grid-cols-4 auto-rows-fr'
+                ? 'grid-cols-1 md:grid-cols-3'
+                : 'grid-cols-1 md:grid-cols-2 xl:grid-cols-4'
             }`}
           >
             {booths.map((booth) => {
@@ -121,23 +150,28 @@ export const MonitorDashboard: React.FC = () => {
               return (
                 <div
                   key={booth.id}
-                  className={`bg-slate-900/95 rounded-2xl sm:rounded-3xl p-3 sm:p-5 lg:p-6 border transition-all flex flex-col justify-between items-center text-center shadow-2xl relative overflow-hidden min-w-0 ${
+                  className={`rounded-3xl p-4 sm:p-6 lg:p-7 border-2 transition-all flex flex-col justify-between items-center text-center shadow-2xl relative overflow-hidden min-w-0 ${
                     isJustCalled
-                      ? 'border-red-500 ring-4 ring-red-500/60 bg-gradient-to-b from-red-950/80 via-slate-900 to-slate-950 animate-pulse'
+                      ? 'border-red-500 ring-8 ring-red-500/40 bg-gradient-to-b from-red-950 via-slate-900 to-slate-950 animate-pulse'
                       : activeTicket
-                      ? 'border-red-600/70 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950'
-                      : 'border-slate-800/90 hover:border-slate-700 bg-slate-900/60'
+                      ? 'border-red-600 bg-gradient-to-b from-slate-900 via-slate-900 to-slate-950 shadow-red-950/50'
+                      : 'border-slate-800 bg-slate-900/60'
                   }`}
                 >
+                  {/* Glowing Backdrop Accent when Active */}
+                  {activeTicket && (
+                    <div className="absolute inset-0 bg-red-600/10 pointer-events-none blur-2xl" />
+                  )}
+
                   {/* Booth Header Title */}
-                  <div className="w-full pb-2 sm:pb-3 border-b border-slate-800 text-center min-w-0">
+                  <div className="w-full pb-3 border-b border-slate-800/80 text-center min-w-0 relative z-10">
                     <span
                       className={`font-black uppercase tracking-wider text-white block truncate leading-tight ${
                         booths.length <= 2
-                          ? 'text-2xl sm:text-3xl lg:text-4xl'
+                          ? 'text-3xl sm:text-4xl lg:text-5xl'
                           : booths.length === 3
-                          ? 'text-xl sm:text-2xl lg:text-3xl'
-                          : 'text-base sm:text-lg lg:text-2xl'
+                          ? 'text-2xl sm:text-3xl lg:text-4xl'
+                          : 'text-xl sm:text-2xl lg:text-3xl'
                       }`}
                       title={booth.name}
                     >
@@ -145,32 +179,37 @@ export const MonitorDashboard: React.FC = () => {
                     </span>
                   </div>
 
-                  {/* Flexible Calling Ticket Number */}
-                  <div className="my-auto py-2 sm:py-4 w-full flex flex-col items-center justify-center min-w-0">
-                    <span className="text-[10px] sm:text-xs font-black text-slate-400 uppercase tracking-widest block mb-0.5 sm:mb-1">
+                  {/* Flexible Calling Ticket Number - Extra Large for Distant TV Viewing */}
+                  <div className="my-auto py-3 sm:py-6 w-full flex flex-col items-center justify-center min-w-0 relative z-10">
+                    <span className="text-xs sm:text-sm font-black text-slate-400 uppercase tracking-widest block mb-1">
                       NOMOR TIKET
                     </span>
                     <div
-                      className={`font-black font-mono tracking-tight text-white drop-shadow-[0_0_35px_rgba(239,68,68,0.6)] transition-all leading-none min-w-0 max-w-full truncate ${
+                      className={`font-black font-mono tracking-tight text-white drop-shadow-[0_0_40px_rgba(239,68,68,0.75)] transition-all leading-none min-w-0 max-w-full truncate ${
                         booths.length <= 2
-                          ? 'text-6xl sm:text-7xl md:text-8xl lg:text-[8rem]'
+                          ? 'text-7xl sm:text-8xl md:text-9xl xl:text-[10rem]'
                           : booths.length === 3
-                          ? 'text-5xl sm:text-6xl lg:text-7xl'
-                          : 'text-4xl sm:text-5xl lg:text-6xl'
+                          ? 'text-6xl sm:text-7xl lg:text-8xl'
+                          : 'text-5xl sm:text-6xl lg:text-7xl'
                       }`}
                     >
                       {activeTicket ? activeTicket.ticketNumber : '---'}
                     </div>
+                    {activeTicket && activeTicket.customerName && (
+                      <span className="mt-2 text-sm sm:text-base font-extrabold text-amber-300 max-w-full truncate bg-amber-400/10 px-3 py-1 rounded-xl border border-amber-400/20">
+                        {activeTicket.customerName}
+                      </span>
+                    )}
                   </div>
 
                   {/* Call Status Badge */}
                   {activeTicket ? (
-                    <div className="w-full py-2.5 sm:py-3.5 rounded-xl sm:rounded-2xl bg-red-600 text-white font-black text-xs sm:text-sm lg:text-base uppercase tracking-wider flex items-center justify-center gap-2 shadow-2xl shadow-red-600/50 min-w-0 px-2">
-                      <span className="w-2.5 h-2.5 sm:w-3 sm:h-3 rounded-full bg-white animate-ping shrink-0" />
+                    <div className="w-full py-3 sm:py-4 rounded-2xl bg-gradient-to-r from-red-600 via-rose-600 to-red-600 text-white font-black text-sm sm:text-base lg:text-lg uppercase tracking-wider flex items-center justify-center gap-2.5 shadow-xl shadow-red-600/50 min-w-0 px-3 relative z-10 border border-red-400">
+                      <span className="w-3 h-3 rounded-full bg-white animate-ping shrink-0" />
                       <span className="truncate">SILAKAN MASUK BOOTH</span>
                     </div>
                   ) : (
-                    <div className="w-full py-2 sm:py-2.5 rounded-xl sm:rounded-2xl bg-slate-800/80 text-slate-400 border border-slate-800 text-[11px] sm:text-xs lg:text-sm font-extrabold tracking-wide uppercase min-w-0 px-2 truncate">
+                    <div className="w-full py-2.5 sm:py-3 rounded-2xl bg-slate-800/80 text-slate-400 border border-slate-700/80 text-xs sm:text-sm font-extrabold tracking-wider uppercase min-w-0 px-3 truncate relative z-10">
                       BOOTH MENUNGGU
                     </div>
                   )}
@@ -180,47 +219,54 @@ export const MonitorDashboard: React.FC = () => {
           </div>
         </div>
 
-        {/* RIGHT SECTION: DAFTAR MENUNGGU (COMPACT 3 COLS SIDEBAR) */}
-        <div className="lg:col-span-3 bg-slate-900/95 rounded-3xl p-4 sm:p-5 border border-slate-800 shadow-2xl flex flex-col justify-between space-y-3">
+        {/* RIGHT SECTION: DAFTAR MENUNGGU (COMPACT HIGH-CONTRAST SIDEBAR) */}
+        <div className="lg:col-span-4 xl:col-span-3 bg-slate-900/95 rounded-3xl p-4 sm:p-5 border border-slate-800 shadow-2xl flex flex-col justify-between space-y-3">
           <div className="flex flex-col h-full">
-            <div className="flex items-center justify-between pb-2.5 border-b border-slate-800 text-xs font-black uppercase tracking-wider shrink-0">
-              <span className="flex items-center gap-1.5 text-red-400 text-sm font-black">
-                <Users className="w-4 h-4 text-red-500" />
-                MENUNGGU
+            <div className="flex items-center justify-between pb-3 border-b border-slate-800 text-xs font-black uppercase tracking-wider shrink-0">
+              <span className="flex items-center gap-2 text-red-400 text-base font-black">
+                <Users className="w-5 h-5 text-red-500" />
+                ANTRIAN MENUNGGU
               </span>
-              <span className="bg-red-600/20 text-red-300 px-2.5 py-0.5 rounded-full border border-red-500/30 text-xs font-black">
+              <span className="bg-red-600 text-white px-3 py-1 rounded-full text-xs font-black shadow-md shadow-red-600/30">
                 {allWaitingTickets.length}
               </span>
             </div>
 
-            {/* Waiting List Cards (Slightly smaller & compact) */}
+            {/* Waiting List Cards - High Legibility */}
             {allWaitingTickets.length > 0 ? (
-              <div className="mt-3 space-y-2 overflow-y-auto max-h-[480px] lg:max-h-full pr-1 flex-1">
+              <div className="mt-3 space-y-2.5 overflow-y-auto max-h-[480px] lg:max-h-full pr-1 flex-1">
                 {allWaitingTickets.map((ticket, index) => (
                   <div
                     key={ticket.id}
-                    className={`p-3 rounded-2xl border flex items-center justify-between transition-all ${
+                    className={`p-3.5 rounded-2xl border flex items-center justify-between transition-all ${
                       index === 0
-                        ? 'bg-gradient-to-r from-red-600 to-red-700 text-white border-red-500 shadow-md shadow-red-600/30 font-black'
-                        : 'bg-slate-800/80 text-slate-200 border-slate-700/70 font-bold'
+                        ? 'bg-gradient-to-r from-red-600 to-rose-700 text-white border-red-400 shadow-lg shadow-red-600/40 ring-2 ring-red-400/50'
+                        : 'bg-slate-800/90 text-slate-100 border-slate-700/80'
                     }`}
                   >
-                    <div className="flex items-center gap-2">
+                    <div className="flex items-center gap-2.5 min-w-0">
                       <span
-                        className={`text-[10px] px-2 py-0.5 rounded-md font-mono ${
-                          index === 0 ? 'bg-white/20 text-white' : 'bg-slate-700 text-slate-300'
+                        className={`text-xs px-2.5 py-1 rounded-lg font-mono font-black ${
+                          index === 0 ? 'bg-white text-red-700 shadow-sm' : 'bg-slate-700 text-slate-300'
                         }`}
                       >
                         #{index + 1}
                       </span>
-                      <span className="font-mono text-xl sm:text-2xl tracking-tight font-black">
-                        {ticket.ticketNumber}
-                      </span>
+                      <div className="flex flex-col min-w-0">
+                        <span className="font-mono text-2xl sm:text-3xl tracking-tight font-black leading-none">
+                          {ticket.ticketNumber}
+                        </span>
+                        {ticket.customerName && (
+                          <span className="text-[11px] font-bold text-slate-300 truncate max-w-[120px] mt-0.5">
+                            {ticket.customerName}
+                          </span>
+                        )}
+                      </div>
                     </div>
 
                     <span
-                      className={`text-[10px] uppercase font-extrabold px-2 py-0.5 rounded-lg ${
-                        index === 0 ? 'bg-white text-red-700 shadow-sm' : 'bg-slate-700 text-slate-300'
+                      className={`text-xs uppercase font-black px-2.5 py-1 rounded-xl shrink-0 ${
+                        index === 0 ? 'bg-white text-red-800 font-extrabold shadow-sm' : 'bg-slate-700 text-slate-300'
                       }`}
                     >
                       {ticket.boothName}
@@ -229,17 +275,18 @@ export const MonitorDashboard: React.FC = () => {
                 ))}
               </div>
             ) : (
-              <div className="py-12 text-center text-slate-500 text-xs italic font-medium flex-1 flex items-center justify-center">
-                Belum ada antrian.
+              <div className="py-12 text-center text-slate-500 text-sm italic font-medium flex-1 flex items-center justify-center">
+                Belum ada antrian menunggu.
               </div>
             )}
           </div>
 
-          <div className="pt-2 border-t border-slate-800/80 text-[11px] text-slate-400 text-center font-bold shrink-0">
-            Perhatikan panggilan nomor di layar
+          <div className="pt-3 border-t border-slate-800/80 text-xs text-slate-400 text-center font-bold shrink-0">
+            🔔 Mohon persiapkan tiket Anda
           </div>
         </div>
       </div>
     </div>
   );
 };
+

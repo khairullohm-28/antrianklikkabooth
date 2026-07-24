@@ -72,6 +72,11 @@ export interface PrintSettings {
   qrSubText1: string;
   qrSubText2: string;
   qrCustomUrlPattern?: string;
+
+  // TV / Monitor Screen Settings
+  monitorLogoUrl?: string;
+  monitorBrandTitle?: string;
+  monitorWelcomeText?: string;
 }
 
 export type ActivityAction =

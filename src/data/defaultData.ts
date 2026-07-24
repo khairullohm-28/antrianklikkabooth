@@ -64,6 +64,10 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   qrSubText1: 'Scan QR di bawah untuk:',
   qrSubText2: 'Cek posisi antrian real-time',
   qrCustomUrlPattern: '',
+
+  monitorLogoUrl: '',
+  monitorBrandTitle: 'LAYAR ANTRIAN PHOTOBOOTH',
+  monitorWelcomeText: '📸 Selamat Datang di Klikka Photobooth! Silakan bersantai & perhatikan panggilan nomor antrian Anda di layar. Selamat mengabadikan momen seru! ✨',
 };
 
 export interface TicketLayoutTemplate {

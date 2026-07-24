@@ -38,8 +38,21 @@ export const AdminDashboard: React.FC = () => {
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
   const [settingsTab, setSettingsTab] = useState<'booths' | 'label' | 'script' | 'danger'>('booths');
   const [selectedBoothForEdit, setSelectedBoothForEdit] = useState<Booth | null>(null);
+
   // Time filter for Rekapan Selesai
-  const [rekapPeriod, setRekapPeriod] = useState<'daily' | 'monthly' | 'yearly'>('daily');
+  const now = new Date();
+  const [rekapPeriod, setRekapPeriod] = useState<'daily' | 'monthly' | 'yearly' | 'all'>('daily');
+  const [selectedMonth, setSelectedMonth] = useState<number>(now.getMonth());
+  const [selectedYear, setSelectedYear] = useState<number>(now.getFullYear());
+
+  // Month names in Indonesian
+  const monthNames = [
+    'Januari', 'Februari', 'Maret', 'April', 'Mei', 'Juni',
+    'Juli', 'Agustus', 'September', 'Oktober', 'November', 'Desember'
+  ];
+
+  // Year options list from 2000 to 2030
+  const yearOptions = Array.from({ length: 31 }, (_, i) => 2000 + i);
 
   // If not logged in as Admin, show Admin Login Card
   if (!isAdminLoggedIn) {
@@ -62,12 +75,7 @@ export const AdminDashboard: React.FC = () => {
     setIsSettingsOpen(true);
   };
 
-  // Filter completed tickets based on period (Daily, Monthly, Yearly)
-  const now = new Date();
-  const currentDayStr = now.toLocaleDateString('id-ID'); // e.g. "23/07/2026"
-  const currentMonth = now.getMonth(); // 0-11
-  const currentYear = now.getFullYear();
-
+  // Filter completed tickets based on period (Daily, Monthly, Yearly, All)
   const filteredTicketsForRekap = tickets.filter((ticket) => {
     const ticketDate = new Date(ticket.createdAt);
     if (isNaN(ticketDate.getTime())) return true; // fallback if bad date
@@ -75,14 +83,18 @@ export const AdminDashboard: React.FC = () => {
     if (rekapPeriod === 'daily') {
       return (
         ticketDate.getDate() === now.getDate() &&
-        ticketDate.getMonth() === currentMonth &&
-        ticketDate.getFullYear() === currentYear
+        ticketDate.getMonth() === now.getMonth() &&
+        ticketDate.getFullYear() === now.getFullYear()
       );
     } else if (rekapPeriod === 'monthly') {
-      return ticketDate.getMonth() === currentMonth && ticketDate.getFullYear() === currentYear;
+      return (
+        ticketDate.getMonth() === selectedMonth &&
+        ticketDate.getFullYear() === selectedYear
+      );
+    } else if (rekapPeriod === 'yearly') {
+      return ticketDate.getFullYear() === selectedYear;
     } else {
-      // yearly
-      return ticketDate.getFullYear() === currentYear;
+      return true; // 'all'
     }
   });
 
@@ -320,7 +332,7 @@ export const AdminDashboard: React.FC = () => {
             </p>
           </div>
 
-          {/* Period Filter Tabs & Excel Export Button */}
+          {/* Period Filter Tabs & Simple Download Button */}
           <div className="flex flex-wrap items-center gap-2">
             <div className="flex items-center bg-slate-100 p-1 rounded-xl border border-slate-200">
               <button
@@ -341,7 +353,7 @@ export const AdminDashboard: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Per Bulan
+                Bulan
               </button>
               <button
                 onClick={() => setRekapPeriod('yearly')}
@@ -351,17 +363,58 @@ export const AdminDashboard: React.FC = () => {
                     : 'text-slate-600 hover:text-slate-900'
                 }`}
               >
-                Per Tahun
+                Tahun
+              </button>
+              <button
+                onClick={() => setRekapPeriod('all')}
+                className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all ${
+                  rekapPeriod === 'all'
+                    ? 'bg-red-600 text-white shadow-sm'
+                    : 'text-slate-600 hover:text-slate-900'
+                }`}
+              >
+                Semua
               </button>
             </div>
+
+            {/* Month Selector for 'monthly' */}
+            {rekapPeriod === 'monthly' && (
+              <select
+                value={selectedMonth}
+                onChange={(e) => setSelectedMonth(Number(e.target.value))}
+                className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-800 shadow-sm focus:ring-2 focus:ring-red-500 cursor-pointer"
+              >
+                {monthNames.map((m, idx) => (
+                  <option key={m} value={idx}>
+                    {m}
+                  </option>
+                ))}
+              </select>
+            )}
+
+            {/* Year Selector for 'monthly' or 'yearly' */}
+            {(rekapPeriod === 'monthly' || rekapPeriod === 'yearly') && (
+              <select
+                value={selectedYear}
+                onChange={(e) => setSelectedYear(Number(e.target.value))}
+                className="px-3 py-1.5 bg-white border border-slate-300 rounded-xl text-xs font-extrabold text-slate-800 shadow-sm focus:ring-2 focus:ring-red-500 cursor-pointer"
+              >
+                {yearOptions.map((y) => (
+                  <option key={y} value={y}>
+                    {y}
+                  </option>
+                ))}
+              </select>
+            )}
 
             <button
               id="btn-export-excel"
               onClick={handleExportExcelCSV}
-              className="flex items-center gap-2 px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              className="flex items-center gap-1.5 px-3.5 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-xl text-xs font-black shadow-md shadow-emerald-600/20 transition-all active:scale-95"
+              title="Download Data Rekapan CSV"
             >
               <Download className="w-4 h-4" />
-              <span>Ekspor Excel (.CSV)</span>
+              <span>Download</span>
             </button>
           </div>
         </div>
