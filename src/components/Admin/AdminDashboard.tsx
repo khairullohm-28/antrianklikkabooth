@@ -120,66 +120,46 @@ export const AdminDashboard: React.FC = () => {
 
   return (
     <div className="space-y-6 pb-12">
-      {/* Top Banner & Quick Controls (Dark Red & Blue Monitor High-Tech Theme) */}
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-gradient-to-r from-red-950 via-slate-900 to-blue-950 p-6 rounded-3xl text-white shadow-2xl border border-red-900/60 relative overflow-hidden">
-        {/* Glowing Background Accent */}
-        <div className="absolute -right-8 -bottom-8 w-44 h-44 bg-red-600/20 rounded-full blur-3xl pointer-events-none" />
-        <div className="absolute -left-8 -top-8 w-44 h-44 bg-blue-600/20 rounded-full blur-3xl pointer-events-none" />
-
+      {/* Top Banner & Quick Controls (Eye-Friendly Slate & Red Theme) */}
+      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 bg-slate-900 p-6 rounded-3xl text-white shadow-xl border border-slate-800 relative overflow-hidden">
         <div className="relative z-10">
           <div className="flex items-center gap-2 mb-2">
-            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 text-red-300 text-xs font-extrabold border border-red-700/60">
+            <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full bg-red-950/80 text-red-300 text-xs font-extrabold border border-red-800/80">
               <Sparkles className="w-3.5 h-3.5 text-red-400" />
-              Control Center Operator
+              Panel Operator Studio
             </span>
             <span className="inline-flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-emerald-500/20 text-emerald-300 border border-emerald-500/40 text-[10px] font-black shadow-sm">
               <ShieldCheck className="w-3 h-3 text-emerald-400" />
-              Logged In
+              Admin Aktif
             </span>
           </div>
-          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white drop-shadow-sm flex items-center gap-2">
+          <h2 className="text-2xl sm:text-3xl font-black tracking-tight text-white flex items-center gap-2">
             Dashboard Admin Photobooth
-            <span className="w-2.5 h-2.5 rounded-full bg-red-500 animate-ping" />
+            <span className="w-2.5 h-2.5 rounded-full bg-emerald-400 animate-pulse" />
           </h2>
           <p className="text-xs sm:text-sm text-slate-300 mt-1 max-w-xl font-medium leading-relaxed">
-            Kelola pendaftaran antrian, panggil pengunjung per-booth, cetak label thermal, dan atur kustomisasi sistem.
+            Kelola panggilan antrian per booth, cetak tiket thermal, dan akses konfigurasi lengkap di menu Pengaturan.
           </p>
         </div>
 
         {/* Action Controls */}
         <div className="flex flex-wrap items-center gap-2.5 relative z-10">
-          <button
-            id="btn-admin-add-booth"
-            onClick={() => handleOpenSettings('booths')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-lg shadow-red-600/30 transition-all active:scale-95 border border-red-500/50"
-          >
-            <Plus className="w-4 h-4" />
-            <span>Tambah Booth</span>
-          </button>
-
-          <button
-            id="btn-admin-settings-label"
-            onClick={() => handleOpenSettings('label')}
-            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-blue-300 backdrop-blur-md border border-blue-500/40 font-bold text-xs transition-all"
-          >
-            <Printer className="w-4 h-4 text-blue-400" />
-            <span>Desain Label</span>
-          </button>
-
+          {/* Main Settings Button */}
           <button
             id="btn-admin-settings"
             onClick={() => handleOpenSettings('booths')}
-            className="p-2.5 rounded-2xl bg-slate-800/80 hover:bg-slate-800 text-slate-200 border border-slate-700 transition-all"
-            title="Pengaturan Lengkap"
+            className="flex items-center gap-2 px-4 py-2.5 rounded-2xl bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs shadow-lg shadow-red-600/25 border border-red-500/50 transition-all active:scale-95"
+            title="Pengaturan Booth, Label Thermal, dan Sistem"
           >
             <Sliders className="w-4 h-4" />
+            <span>Pengaturan</span>
           </button>
 
           {/* Logout Admin Button */}
           <button
             id="btn-admin-logout"
             onClick={logoutAdmin}
-            className="flex items-center gap-1.5 px-3.5 py-2.5 rounded-2xl bg-slate-900 hover:bg-slate-950 text-white font-extrabold text-xs shadow-md border border-slate-700/80 transition-all active:scale-95 ml-1"
+            className="flex items-center gap-1.5 px-4 py-2.5 rounded-2xl bg-slate-800 hover:bg-slate-700 text-slate-200 font-bold text-xs border border-slate-700 transition-all active:scale-95"
             title="Keluar dari Dashboard Admin"
           >
             <LogOut className="w-4 h-4 text-red-400" />

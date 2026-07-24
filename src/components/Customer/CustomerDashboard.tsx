@@ -5,10 +5,17 @@ import confetti from 'canvas-confetti';
 import { playChimeSound } from '../../utils/audio';
 
 export const CustomerDashboard: React.FC = () => {
-  const { tickets, booths, lastCalledTicket, selectedTicketForCustomer, setSelectedTicketForCustomer } = useQueue();
+  const {
+    tickets,
+    booths,
+    lastCalledTicket,
+    selectedTicketForCustomer,
+    setSelectedTicketForCustomer,
+    soundEnabled,
+    setSoundEnabled,
+  } = useQueue();
 
   const [inputTicket, setInputTicket] = useState('');
-  const [notifyEnabled, setNotifyEnabled] = useState(false);
   const [hasCelebrated, setHasCelebrated] = useState(false);
 
   // Unlock Web Audio context on user interaction
@@ -171,10 +178,13 @@ export const CustomerDashboard: React.FC = () => {
     }
   };
 
-  const handleEnableNotify = () => {
-    playChimeSound();
-    setNotifyEnabled(true);
-    alert('Notifikasi suara aktif! Browser Anda akan membunyikan bel & suara panggilan saat giliran tiba.');
+  const handleToggleNotify = () => {
+    if (!soundEnabled) {
+      playChimeSound();
+      setSoundEnabled(true);
+    } else {
+      setSoundEnabled(false);
+    }
   };
 
   return (
@@ -302,14 +312,16 @@ export const CustomerDashboard: React.FC = () => {
           {/* Audio Notification Toggle Bar */}
           <div className="p-4 bg-white rounded-2xl border border-slate-200/80 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
-              <div className="w-10 h-10 rounded-2xl bg-red-100 text-red-700 flex items-center justify-center font-bold shrink-0">
+              <div className={`w-10 h-10 rounded-2xl flex items-center justify-center font-bold shrink-0 ${
+                soundEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+              }`}>
                 <Bell className="w-5 h-5" />
               </div>
               <div>
                 <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara Panggilan</h4>
                 <p className="text-[11px] text-slate-500 font-medium">
-                  {notifyEnabled
-                    ? 'Notifikasi suara aktif. HP Anda akan berbunyi saat nomor dipanggil.'
+                  {soundEnabled
+                    ? 'Notifikasi suara AKTIF. Browser akan membunyikan bel saat nomor dipanggil.'
                     : 'Aktifkan agar browser membunyikan bel saat nomor dipanggil.'}
                 </p>
               </div>
@@ -318,15 +330,15 @@ export const CustomerDashboard: React.FC = () => {
             <div className="flex items-center gap-2 w-full sm:w-auto">
               <button
                 id="btn-customer-toggle-notify"
-                onClick={handleEnableNotify}
+                onClick={handleToggleNotify}
                 className={`w-full sm:w-auto px-5 py-2.5 rounded-xl font-extrabold text-xs transition-all flex items-center justify-center gap-1.5 active:scale-95 ${
-                  notifyEnabled
-                    ? 'bg-emerald-100 text-emerald-800 border border-emerald-300'
+                  soundEnabled
+                    ? 'bg-emerald-600 hover:bg-emerald-700 text-white shadow-md shadow-emerald-600/20'
                     : 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20'
                 }`}
               >
                 <Volume2 className="w-4 h-4" />
-                <span>{notifyEnabled ? 'Aktif' : 'Aktifkan Suara'}</span>
+                <span>{soundEnabled ? 'Suara Aktif' : 'Aktifkan Suara'}</span>
               </button>
             </div>
           </div>

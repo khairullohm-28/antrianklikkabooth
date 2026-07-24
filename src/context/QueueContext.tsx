@@ -139,7 +139,26 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   });
   const [activeTicketToPrint, setActiveTicketToPrint] = useState<Ticket | null>(null);
   const [isPrintModalOpen, setIsPrintModalOpen] = useState<boolean>(false);
-  const [soundEnabled, setSoundEnabled] = useState<boolean>(true);
+  const [soundEnabled, setSoundEnabledState] = useState<boolean>(() => {
+    try {
+      const saved = localStorage.getItem('photobooth_sound_enabled');
+      return saved !== null ? JSON.parse(saved) : true;
+    } catch {
+      return true;
+    }
+  });
+
+  const setSoundEnabled = useCallback((enabled: boolean | ((prev: boolean) => boolean)) => {
+    setSoundEnabledState((prev) => {
+      const next = typeof enabled === 'function' ? enabled(prev) : enabled;
+      try {
+        localStorage.setItem('photobooth_sound_enabled', JSON.stringify(next));
+      } catch (e) {
+        console.warn('Failed to save sound preference:', e);
+      }
+      return next;
+    });
+  }, []);
 
   // Ref to prevent polling from overwriting recent local updates (race condition prevention)
   const lastMutationTimeRef = useRef<number>(0);
