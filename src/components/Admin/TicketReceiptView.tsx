@@ -24,7 +24,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   const { printSettings: contextSettings, appsScriptConfig } = useQueue();
   const settings = propSettings || propPrintSettings || contextSettings || {};
 
-  const spec = getPaperDimensionSpec(settings.paperWidth);
+  const spec = getPaperDimensionSpec(settings.paperWidth, settings.orientation || 'portrait');
 
   // Format Date & Time according to settings
   const createdDate = new Date(ticket.createdAt);

@@ -78,8 +78,9 @@ export interface PrintSettings {
   fontFamily?: TicketFontFamily;
   textAlign?: TicketAlign;
 
-  // Dimensions & Scale
+  // Dimensions, Orientation & Scale
   paperWidth: TicketPaperWidth;
+  orientation?: 'portrait' | 'landscape';
   fontScale?: 'small' | 'normal' | 'large';
 
   // QR Code Settings

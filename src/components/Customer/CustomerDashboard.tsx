@@ -57,27 +57,27 @@ export const CustomerDashboard: React.FC = () => {
         const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
         if (found) {
           setSelectedTicketForCustomer(found);
-        } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
+        } else {
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
           const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
-          // For completed, deleted or unknown ticket links, set completed status so it doesn't cause broken calculations or server errors
-          const expiredTicket = {
-            id: `expired-${cleanNo}`,
+          const seqNum = parseInt(cleanNo.replace(/\D/g, ''), 10) || 1;
+          const pendingTicket = {
+            id: `pending-${cleanNo}`,
             boothId: matchedBooth ? matchedBooth.id : 'b1',
             boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
             boothCode: matchedBooth ? matchedBooth.code : boothCode,
             ticketNumber: cleanNo,
-            sequence: 0,
-            status: 'completed' as const,
+            sequence: seqNum,
+            status: 'waiting' as const,
             createdAt: new Date().toISOString(),
           };
-          setSelectedTicketForCustomer(expiredTicket);
+          setSelectedTicketForCustomer(pendingTicket);
         }
       }
     } catch (err) {
       console.warn('URL ticket parsing error:', err);
     }
-  }, []);
+  }, [tickets, booths]);
 
   // Synchronize live customer ticket from live tickets array
   const currentCustomerTicket = useMemo(() => {

@@ -5,7 +5,7 @@ export interface PaperDimensionSpec {
   heightMm: number | null; // null for continuous roll
   widthPx: string;
   heightPx: string; // 'auto' or e.g. '113px'
-  pageSizeCss: string; // e.g. '50mm 30mm'
+  pageSizeCss: string; // e.g. '50mm 30mm portrait' or '50mm 30mm landscape'
   paddingClass: string;
   printPaddingCss: string;
   logoMaxPx: number;
@@ -18,12 +18,18 @@ export interface PaperDimensionSpec {
   dividerText: string;
   isCompactHeight: boolean;
   isMicroHeight: boolean;
+  orientation: 'portrait' | 'landscape';
 }
 
-export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimensionSpec => {
+export const getPaperDimensionSpec = (
+  paperWidth?: TicketPaperWidth,
+  orientation: 'portrait' | 'landscape' = 'portrait'
+): PaperDimensionSpec => {
+  let spec: PaperDimensionSpec;
+
   switch (paperWidth) {
     case '70x20mm':
-      return {
+      spec = {
         widthMm: 70,
         heightMm: 20,
         widthPx: '264px',
@@ -41,10 +47,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '--------------------',
         isCompactHeight: true,
         isMicroHeight: true,
+        orientation: 'portrait',
       };
+      break;
 
     case '50x30mm':
-      return {
+      spec = {
         widthMm: 50,
         heightMm: 30,
         widthPx: '189px',
@@ -62,10 +70,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------',
         isCompactHeight: true,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '50x40mm':
-      return {
+      spec = {
         widthMm: 50,
         heightMm: 40,
         widthPx: '189px',
@@ -83,10 +93,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------',
         isCompactHeight: true,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '57x40mm':
-      return {
+      spec = {
         widthMm: 57,
         heightMm: 40,
         widthPx: '215px',
@@ -104,10 +116,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '------------------',
         isCompactHeight: true,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '60x40mm':
-      return {
+      spec = {
         widthMm: 60,
         heightMm: 40,
         widthPx: '226px',
@@ -125,10 +139,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '--------------------',
         isCompactHeight: true,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '80x50mm':
-      return {
+      spec = {
         widthMm: 80,
         heightMm: 50,
         widthPx: '300px',
@@ -146,11 +162,13 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '--------------------------------',
         isCompactHeight: true,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '76x100mm':
     case '78x100mm':
-      return {
+      spec = {
         widthMm: 76,
         heightMm: 100,
         widthPx: '287px',
@@ -168,10 +186,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '76x130mm':
-      return {
+      spec = {
         widthMm: 76,
         heightMm: 130,
         widthPx: '287px',
@@ -189,10 +209,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '100x100mm':
-      return {
+      spec = {
         widthMm: 100,
         heightMm: 100,
         widthPx: '378px',
@@ -210,10 +232,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '100x150mm':
-      return {
+      spec = {
         widthMm: 100,
         heightMm: 150,
         widthPx: '378px',
@@ -231,10 +255,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '100x180mm':
-      return {
+      spec = {
         widthMm: 100,
         heightMm: 180,
         widthPx: '378px',
@@ -252,10 +278,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '100x200mm':
-      return {
+      spec = {
         widthMm: 100,
         heightMm: 200,
         widthPx: '378px',
@@ -273,10 +301,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '210x300mm':
-      return {
+      spec = {
         widthMm: 210,
         heightMm: 300,
         widthPx: '780px',
@@ -294,10 +324,12 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '----------------------------------------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '80mm':
-      return {
+      spec = {
         widthMm: 80,
         heightMm: null,
         widthPx: '300px',
@@ -315,11 +347,13 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '--------------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
 
     case '58mm':
     default:
-      return {
+      spec = {
         widthMm: 58,
         heightMm: null,
         widthPx: '230px',
@@ -337,6 +371,31 @@ export const getPaperDimensionSpec = (paperWidth?: TicketPaperWidth): PaperDimen
         dividerText: '-------------------------',
         isCompactHeight: false,
         isMicroHeight: false,
+        orientation: 'portrait',
       };
+      break;
   }
+
+  // Adjust pageSizeCss and orientation
+  spec.orientation = orientation;
+  if (spec.heightMm !== null) {
+    if (orientation === 'landscape') {
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm landscape`;
+      // Swap width/height for preview box if landscape
+      const tempW = spec.widthPx;
+      spec.widthPx = spec.heightPx !== 'auto' ? spec.heightPx : '280px';
+      spec.heightPx = tempW;
+    } else {
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm portrait`;
+    }
+  } else {
+    // For continuous roll paper (58mm, 80mm)
+    if (orientation === 'landscape') {
+      spec.pageSizeCss = `${spec.widthMm}mm landscape`;
+    } else {
+      spec.pageSizeCss = `${spec.widthMm}mm portrait`;
+    }
+  }
+
+  return spec;
 };

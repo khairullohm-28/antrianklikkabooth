@@ -209,7 +209,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     const printElement = document.getElementById('designer-preview-ticket');
     if (!printElement) return;
 
-    const spec = getPaperDimensionSpec(localPrintSettings.paperWidth);
+    const spec = getPaperDimensionSpec(localPrintSettings.paperWidth, localPrintSettings.orientation || 'portrait');
 
     const windowPrint = window.open('', '', 'width=500,height=700');
     if (!windowPrint) return;
@@ -919,15 +919,35 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
                             </optgroup>
                           </select>
 
+                          {/* Orientasi Cetak */}
+                          <div className="mt-2.5 mb-2">
+                            <label className="font-semibold text-slate-700 block mb-1">
+                              Orientasi Cetak (Portrait / Landscape)
+                            </label>
+                            <select
+                              value={localPrintSettings.orientation || 'portrait'}
+                              onChange={(e) =>
+                                setLocalPrintSettings({
+                                  ...localPrintSettings,
+                                  orientation: e.target.value as 'portrait' | 'landscape',
+                                })
+                              }
+                              className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-xs focus:ring-2 focus:ring-red-500"
+                            >
+                              <option value="portrait">Portrait (Tegak)</option>
+                              <option value="landscape">Landscape (Miring / Memanjang)</option>
+                            </select>
+                          </div>
+
                           {/* Live Dimension Details Info Badge */}
                           {(() => {
-                            const spec = getPaperDimensionSpec(localPrintSettings.paperWidth);
+                            const spec = getPaperDimensionSpec(localPrintSettings.paperWidth, localPrintSettings.orientation || 'portrait');
                             return (
                               <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 space-y-1">
                                 <div className="flex items-center justify-between font-extrabold text-slate-900 border-b border-slate-200 pb-1">
                                   <span>Detail Dimensi Kertas:</span>
                                   <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] uppercase font-black">
-                                    {spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto (Roll)'}
+                                    {spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto (Roll)'} ({spec.orientation})
                                   </span>
                                 </div>
                                 <div className="grid grid-cols-2 gap-1 pt-0.5 font-medium">

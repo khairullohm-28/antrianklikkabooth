@@ -228,20 +228,43 @@ export const SettingView: React.FC = () => {
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Lebar Kertas Printer</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Ukuran / Lebar Kertas Printer</label>
                 <select
                   value={localPrintSettings.paperWidth || '58mm'}
                   onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, paperWidth: e.target.value as any })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer"
                 >
-                  <option value="58mm">58mm (Kertas Thermal Standar Kasir)</option>
-                  <option value="80mm">80mm (Kertas Thermal Lebar)</option>
-                  <option value="78x100mm">78x100mm (Label Besar)</option>
-                  <option value="50x30mm">50x30mm (Stiker Small)</option>
+                  <option value="58mm">58mm (Roll Thermal Standar Kasir)</option>
+                  <option value="80mm">80mm (Roll Thermal Lebar)</option>
+                  <option value="50x30mm">50mm x 30mm (Label Stiker Kecil)</option>
+                  <option value="50x40mm">50mm x 40mm (Label Stiker Medium)</option>
+                  <option value="57x40mm">57mm x 40mm (Label Mini Roll)</option>
+                  <option value="60x40mm">60mm x 40mm (Label Barcode Standard)</option>
+                  <option value="70x20mm">70mm x 20mm (Label Strip Horizontal)</option>
+                  <option value="76x100mm">76mm x 100mm (Label Stiker Besar)</option>
+                  <option value="76x130mm">76mm x 130mm (Label Stiker Panjang)</option>
+                  <option value="80x50mm">80mm x 50mm (Label Stiker Medium Plus)</option>
+                  <option value="100x100mm">100mm x 100mm (Label Persegi)</option>
+                  <option value="100x150mm">100mm x 150mm (Label A6 Shipping)</option>
+                  <option value="100x180mm">100mm x 180mm (Label Ekstra Panjang)</option>
+                  <option value="100x200mm">100mm x 200mm (Label Banner)</option>
+                  <option value="210x300mm">210mm x 300mm (Kertas A4 / Document)</option>
                 </select>
               </div>
 
               <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Orientasi Cetak Printer</label>
+                <select
+                  value={localPrintSettings.orientation || 'portrait'}
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, orientation: e.target.value as 'portrait' | 'landscape' })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  <option value="portrait">Portrait (Tegak / Standar)</option>
+                  <option value="landscape">Landscape (Miring / Memanjang)</option>
+                </select>
+              </div>
+
+              <div className="sm:col-span-2">
                 <label className="text-xs font-bold text-slate-700 block mb-1">Logo Struk (Upload)</label>
                 <div className="flex gap-2">
                   <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-700 cursor-pointer hover:border-red-500">
@@ -264,11 +287,16 @@ export const SettingView: React.FC = () => {
 
             {/* LIVE RECEIPT PREVIEW BOX */}
             <div className="p-4 bg-slate-100 rounded-2xl border border-slate-200/80 space-y-2">
-              <span className="text-xs font-extrabold text-slate-600 uppercase flex items-center gap-1.5">
-                <Eye className="w-4 h-4 text-red-600" /> Live Preview Struk Thermal (58mm/80mm)
-              </span>
-              <div className="flex justify-center py-2">
-                <div className="bg-white p-4 shadow-lg rounded border border-slate-200 max-w-xs w-full">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-extrabold text-slate-600 uppercase flex items-center gap-1.5">
+                  <Eye className="w-4 h-4 text-red-600" /> Live Preview Struk Thermal
+                </span>
+                <span className="text-[10px] font-black uppercase bg-red-100 text-red-800 px-2 py-0.5 rounded-md border border-red-200">
+                  {localPrintSettings.paperWidth || '58mm'} ({localPrintSettings.orientation || 'portrait'})
+                </span>
+              </div>
+              <div className="flex justify-center py-2 overflow-x-auto">
+                <div className="bg-white p-4 shadow-lg rounded border border-slate-200 flex justify-center items-center">
                   <TicketReceiptView ticket={sampleTicket} booth={sampleBooth} settings={localPrintSettings} printSettings={localPrintSettings} />
                 </div>
               </div>

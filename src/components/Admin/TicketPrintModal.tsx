@@ -20,7 +20,7 @@ export const TicketPrintModal: React.FC = () => {
 
   if (!isPrintModalOpen || !activeTicketToPrint) return null;
 
-  const spec = getPaperDimensionSpec(printSettings.paperWidth);
+  const spec = getPaperDimensionSpec(printSettings.paperWidth, printSettings.orientation || 'portrait');
 
   // Calculate estimated wait time for this ticket
   const booth = booths.find((b) => b.id === activeTicketToPrint.boothId);
@@ -131,34 +131,39 @@ export const TicketPrintModal: React.FC = () => {
         @media print {
           @page {
             size: ${spec.pageSizeCss};
-            margin: 0;
+            margin: 0 !important;
+          }
+          body > * {
+            display: none !important;
+          }
+          #printable-thermal-ticket, #printable-thermal-ticket * {
+            visibility: visible !important;
           }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
             background: white !important;
-            width: ${spec.widthMm}mm !important;
-            ${spec.heightMm ? `height: ${spec.heightMm}mm !important;` : ''}
-          }
-          body * {
-            visibility: hidden;
-          }
-          #printable-thermal-ticket, #printable-thermal-ticket * {
-            visibility: visible;
+            width: 100% !important;
+            height: 100% !important;
+            overflow: hidden !important;
+            display: flex !important;
+            justify-content: center !important;
+            align-items: flex-start !important;
           }
           #printable-thermal-ticket {
-            position: absolute !important;
-            left: 0 !important;
+            position: fixed !important;
             top: 0 !important;
+            left: 50% !important;
+            transform: translateX(-50%) !important;
             width: ${spec.widthMm}mm !important;
             ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : 'height: auto !important;'}
             padding: ${spec.printPaddingCss} !important;
-            margin: 0 auto !important;
+            margin: 0 !important;
             box-shadow: none !important;
             border: none !important;
-            overflow: hidden !important;
             box-sizing: border-box !important;
             page-break-after: avoid !important;
+            page-break-before: avoid !important;
             page-break-inside: avoid !important;
           }
         }

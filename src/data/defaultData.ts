@@ -225,6 +225,7 @@ export const TICKET_TEMPLATES: TicketLayoutTemplate[] = [
       fontFamily: 'monospace',
       textAlign: 'center',
       paperWidth: '78x100mm',
+      orientation: 'portrait',
       fontScale: 'normal',
       showQR: true,
       qrSize: 130,
