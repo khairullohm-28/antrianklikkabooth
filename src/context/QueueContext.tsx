@@ -592,7 +592,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         boothName,
         ticketNumber,
       };
-      const updatedLogs = [newLog, ...logs];
+      // Cap at 25 items max to prevent excessive Firestore document size and sync collisions
+      const updatedLogs = [newLog, ...logs].slice(0, 25);
       setLogs(updatedLogs);
       return updatedLogs;
     },

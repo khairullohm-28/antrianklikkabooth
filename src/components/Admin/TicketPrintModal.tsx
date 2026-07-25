@@ -139,7 +139,7 @@ export const TicketPrintModal: React.FC = () => {
             background: #ffffff !important;
             width: 100% !important;
             height: 100% !important;
-            overflow: hidden !important;
+            overflow: visible !important;
           }
           body * {
             visibility: hidden !important;
@@ -148,11 +148,12 @@ export const TicketPrintModal: React.FC = () => {
             visibility: visible !important;
           }
           #printable-thermal-ticket {
-            position: fixed !important;
+            position: absolute !important;
             top: 0 !important;
-            left: 50% !important;
-            transform: translateX(-50%) !important;
-            width: ${spec.widthMm}mm !important;
+            left: 0 !important;
+            width: 100% !important;
+            max-width: 100% !important;
+            min-width: 100% !important;
             ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : 'height: auto !important;'}
             padding: ${spec.printPaddingCss} !important;
             margin: 0 !important;

@@ -380,8 +380,8 @@ export const getPaperDimensionSpec = (
   spec.orientation = orientation;
   if (spec.heightMm !== null) {
     if (orientation === 'landscape') {
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm landscape`;
-      // Swap width/height for preview box if landscape
+      spec.pageSizeCss = `${spec.heightMm}mm ${spec.widthMm}mm landscape`;
+      // Swap width/height for display preview box if landscape
       const tempW = spec.widthPx;
       spec.widthPx = spec.heightPx !== 'auto' ? spec.heightPx : '280px';
       spec.heightPx = tempW;

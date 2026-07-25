@@ -137,27 +137,32 @@ export const CustomerDashboard: React.FC = () => {
 
     if ((isMyTurn || isMatchWithLastCalled) && !hasCelebrated) {
       setHasCelebrated(true);
-      setShowCallPopup(true);
 
-      if (soundEnabled) {
+      const timer = setTimeout(() => {
+        setShowCallPopup(true);
+
+        if (soundEnabled) {
+          try {
+            playDoubleChimeSound();
+          } catch (audioErr) {
+            console.warn('Customer chime playback warning:', audioErr);
+          }
+        }
+
         try {
-          playDoubleChimeSound();
-        } catch (audioErr) {
-          console.warn('Customer chime playback warning:', audioErr);
+          if (typeof confetti === 'function') {
+            confetti({
+              particleCount: 150,
+              spread: 100,
+              origin: { y: 0.5 },
+            });
+          }
+        } catch (err) {
+          console.warn('Confetti error:', err);
         }
-      }
+      }, 500);
 
-      try {
-        if (typeof confetti === 'function') {
-          confetti({
-            particleCount: 150,
-            spread: 100,
-            origin: { y: 0.5 },
-          });
-        }
-      } catch (err) {
-        console.warn('Confetti error:', err);
-      }
+      return () => clearTimeout(timer);
     }
   }, [isMyTurn, currentCustomerTicket, lastCalledTicket, hasCelebrated, soundEnabled]);
 
