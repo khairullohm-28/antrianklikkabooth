@@ -1,10 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously, onAuthStateChanged } from 'firebase/auth';
-import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc } from 'firebase/firestore';
+import { getAuth, signInAnonymously } from 'firebase/auth';
+import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc, setLogLevel } from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
+
+// Suppress internal Firestore WebChannel stream noise on transient reconnects
+setLogLevel('error');
 
 export const db =
   firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'

@@ -77,7 +77,7 @@ export const CustomerDashboard: React.FC = () => {
     } catch (err) {
       console.warn('URL ticket parsing error:', err);
     }
-  }, [tickets, booths, selectedTicketForCustomer, setSelectedTicketForCustomer]);
+  }, []);
 
   // Synchronize live customer ticket from live tickets array
   const currentCustomerTicket = useMemo(() => {

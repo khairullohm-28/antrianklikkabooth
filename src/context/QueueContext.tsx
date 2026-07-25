@@ -30,7 +30,7 @@ interface QueueContextType {
 
   // Actions
   callNext: (boothId: string) => Ticket | null;
-  printTicket: (boothId: string) => Ticket;
+  printTicket: (boothId: string) => Ticket | null;
   recallTicket: (ticketId: string) => void;
   completeTicket: (ticketId: string) => void;
   cancelTicket: (ticketId: string) => void;
@@ -211,56 +211,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Broadcast Channel & Storage listener for multi-tab sync
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
 
-  // Periodic 1-second polling to guarantee real-time sync across tabs/windows
-  useEffect(() => {
-    const syncFromLocalStorage = () => {
-      try {
-        const rawTickets = localStorage.getItem(LOCAL_STORAGE_KEY_TICKETS);
-        if (rawTickets) {
-          setTickets((prev) => {
-            if (JSON.stringify(prev) !== rawTickets) {
-              return JSON.parse(rawTickets);
-            }
-            return prev;
-          });
-        }
-        const rawBooths = localStorage.getItem(LOCAL_STORAGE_KEY_BOOTHS);
-        if (rawBooths) {
-          setBooths((prev) => {
-            if (JSON.stringify(prev) !== rawBooths) {
-              return JSON.parse(rawBooths);
-            }
-            return prev;
-          });
-        }
-        const rawScript = localStorage.getItem(LOCAL_STORAGE_KEY_SCRIPT);
-        if (rawScript) {
-          setAppsScriptConfig((prev) => {
-            if (JSON.stringify(prev) !== rawScript) {
-              return JSON.parse(rawScript);
-            }
-            return prev;
-          });
-        }
-        const rawCalled = localStorage.getItem('photobooth_last_called_ticket');
-        if (rawCalled) {
-          setLastCalledTicket((prev) => {
-            if (JSON.stringify(prev) !== rawCalled) {
-              return JSON.parse(rawCalled);
-            }
-            return prev;
-          });
-        } else {
-          setLastCalledTicket((prev) => (prev !== null ? null : prev));
-        }
-      } catch (err) {
-        console.error('Interval sync error:', err);
-      }
-    };
-
-    const interval = setInterval(syncFromLocalStorage, 500);
-    return () => clearInterval(interval);
-  }, []);
+  // Lock ref to prevent rapid double inputs / clicks
+  const lastActionTimeRef = useRef<number>(0);
 
   // Periodic Google Apps Script remote polling (every 800ms if enabled - sub-second realtime)
   useEffect(() => {
@@ -667,6 +619,13 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Actions implementation
   const callNext = useCallback(
     (boothId: string): Ticket | null => {
+      // Prevent double input within 450ms
+      const now = Date.now();
+      if (now - lastActionTimeRef.current < 450) {
+        return null;
+      }
+      lastActionTimeRef.current = now;
+
       const booth = booths.find((b) => b.id === boothId);
       if (!booth) return null;
 
@@ -742,7 +701,14 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   );
 
   const printTicket = useCallback(
-    (boothId: string): Ticket => {
+    (boothId: string): Ticket | null => {
+      // Prevent double input within 450ms
+      const now = Date.now();
+      if (now - lastActionTimeRef.current < 450) {
+        return null;
+      }
+      lastActionTimeRef.current = now;
+
       const booth = booths.find((b) => b.id === boothId);
       if (!booth) throw new Error('Booth not found');
 
