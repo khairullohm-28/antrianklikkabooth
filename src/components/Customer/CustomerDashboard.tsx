@@ -17,6 +17,7 @@ export const CustomerDashboard: React.FC = () => {
 
   const [inputTicket, setInputTicket] = useState('');
   const [hasCelebrated, setHasCelebrated] = useState(false);
+  const [showCallPopup, setShowCallPopup] = useState(false);
 
   // Unlock Web Audio & Speech synthesis context on user interaction
   useEffect(() => {
@@ -54,12 +55,12 @@ export const CustomerDashboard: React.FC = () => {
       if (ticketNo) {
         const cleanNo = ticketNo.trim().toUpperCase();
         setInputTicket(cleanNo);
-        const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
+        const found = tickets.find((t) => (t.ticketNumber || '').toString().trim().toUpperCase() === cleanNo);
         if (found) {
           setSelectedTicketForCustomer(found);
         } else {
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
-          const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
+          const matchedBooth = booths.find((b) => (b.code || '').toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
           const seqNum = parseInt(cleanNo.replace(/\D/g, ''), 10) || 1;
           const pendingTicket = {
             id: `pending-${cleanNo}`,
@@ -82,11 +83,14 @@ export const CustomerDashboard: React.FC = () => {
   // Synchronize live customer ticket from live tickets array
   const currentCustomerTicket = useMemo(() => {
     if (!selectedTicketForCustomer) return null;
+    const myCleanNo = (selectedTicketForCustomer.ticketNumber || '').toString().trim().toUpperCase();
+    if (!myCleanNo) return selectedTicketForCustomer;
+
     return (
       tickets.find(
         (t) =>
           t.id === selectedTicketForCustomer.id ||
-          t.ticketNumber.trim().toUpperCase() === selectedTicketForCustomer.ticketNumber.trim().toUpperCase()
+          (t.ticketNumber || '').toString().trim().toUpperCase() === myCleanNo
       ) || selectedTicketForCustomer
     );
   }, [tickets, selectedTicketForCustomer]);
@@ -118,33 +122,39 @@ export const CustomerDashboard: React.FC = () => {
   const estimatedWaitMinutes = Math.max(0, ticketsAhead * avgTime);
 
   // Check if customer ticket is CALLED right now!
-  const isMyTurn = currentCustomerTicket && currentCustomerTicket.status === 'called';
+  const isMyTurn = Boolean(currentCustomerTicket && currentCustomerTicket.status === 'called');
 
-  // Trigger celebration & pleasant chime whenever ticket is called
+  // Trigger celebration, popup modal & chime whenever ticket is called
   useEffect(() => {
     if (!currentCustomerTicket) return;
 
-    const isMatchWithLastCalled =
-      lastCalledTicket &&
-      (lastCalledTicket.id === currentCustomerTicket.id ||
-        lastCalledTicket.ticketNumber.trim().toUpperCase() === currentCustomerTicket.ticketNumber.trim().toUpperCase());
+    const myNo = (currentCustomerTicket.ticketNumber || '').toString().trim().toUpperCase();
+    const lastCalledNo = (lastCalledTicket?.ticketNumber || '').toString().trim().toUpperCase();
+
+    const isMatchWithLastCalled = Boolean(
+      lastCalledNo && myNo && (lastCalledTicket?.id === currentCustomerTicket.id || lastCalledNo === myNo)
+    );
 
     if ((isMyTurn || isMatchWithLastCalled) && !hasCelebrated) {
       setHasCelebrated(true);
-      try {
-        if (soundEnabled) {
+      setShowCallPopup(true);
+
+      if (soundEnabled) {
+        try {
           playDoubleChimeSound();
+        } catch (audioErr) {
+          console.warn('Customer chime playback warning:', audioErr);
         }
-      } catch (audioErr) {
-        console.warn('Customer chime playback warning:', audioErr);
       }
 
       try {
-        confetti({
-          particleCount: 120,
-          spread: 90,
-          origin: { y: 0.5 },
-        });
+        if (typeof confetti === 'function') {
+          confetti({
+            particleCount: 150,
+            spread: 100,
+            origin: { y: 0.5 },
+          });
+        }
       } catch (err) {
         console.warn('Confetti error:', err);
       }
@@ -196,7 +206,57 @@ export const CustomerDashboard: React.FC = () => {
   };
 
   return (
-    <div className="max-w-xl mx-auto space-y-5 pb-12 font-sans">
+    <div className="max-w-xl mx-auto space-y-5 pb-12 font-sans relative">
+      {/* SURPRISE POPUP MODAL: GILIRAN ANDA TIBA */}
+      {showCallPopup && currentCustomerTicket && (
+        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/80 backdrop-blur-md animate-fadeIn">
+          <div className="bg-white rounded-3xl shadow-2xl max-w-md w-full p-6 sm:p-8 text-center border-4 border-emerald-500 relative overflow-hidden animate-scaleUp space-y-5">
+            {/* Background Decorative Pulses */}
+            <div className="absolute -top-12 -right-12 w-32 h-32 bg-emerald-400/20 rounded-full blur-2xl pointer-events-none" />
+            <div className="absolute -bottom-12 -left-12 w-32 h-32 bg-emerald-500/20 rounded-full blur-2xl pointer-events-none" />
+
+            {/* Glowing Icon Badge */}
+            <div className="w-20 h-20 rounded-full bg-emerald-100 text-emerald-600 flex items-center justify-center mx-auto ring-8 ring-emerald-50 animate-bounce shadow-xl">
+              <Sparkles className="w-10 h-10 text-emerald-600" />
+            </div>
+
+            <div>
+              <span className="px-4 py-1.5 rounded-full text-xs font-black bg-emerald-600 text-white uppercase tracking-widest inline-block shadow-md mb-2">
+                EFEK KEJUTAN - GILIRAN ANDA TIBA!
+              </span>
+              <h2 className="text-2xl sm:text-3xl font-black text-slate-900 tracking-tight">
+                SILAKAN MASUK BOOTH!
+              </h2>
+              <p className="text-xs text-slate-500 font-medium mt-1">
+                Nomor antrian Anda dipanggil oleh operator photobooth!
+              </p>
+            </div>
+
+            {/* Ticket Box Display */}
+            <div className="p-5 bg-gradient-to-br from-emerald-50 to-emerald-100/80 rounded-2xl border-2 border-emerald-300 shadow-inner space-y-1">
+              <span className="text-[11px] font-black text-emerald-800 uppercase tracking-widest block">
+                NOMOR TIKET DITINJAU
+              </span>
+              <span className="text-5xl sm:text-6xl font-black font-mono text-emerald-600 block tracking-tight my-1">
+                {currentCustomerTicket.ticketNumber}
+              </span>
+              <span className="text-xs font-extrabold text-slate-800 bg-white px-3 py-1 rounded-full border border-emerald-200 inline-block shadow-sm">
+                {currentCustomerTicket.boothName || 'Photobooth Studio'}
+              </span>
+            </div>
+
+            {/* Action Button */}
+            <button
+              id="btn-close-call-popup"
+              onClick={() => setShowCallPopup(false)}
+              className="w-full py-4 bg-emerald-600 hover:bg-emerald-700 text-white font-black text-sm rounded-2xl shadow-xl shadow-emerald-600/30 transition-all active:scale-95 flex items-center justify-center gap-2"
+            >
+              <CheckCircle2 className="w-5 h-5" />
+              <span>SAYA SIAP MASUK BOOTH</span>
+            </button>
+          </div>
+        </div>
+      )}
       {/* SEARCH / LOOKUP TICKET CARD */}
       {!currentCustomerTicket ? (
         <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xl space-y-5 text-center">

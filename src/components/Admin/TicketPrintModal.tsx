@@ -133,22 +133,19 @@ export const TicketPrintModal: React.FC = () => {
             size: ${spec.pageSizeCss};
             margin: 0 !important;
           }
-          body > * {
-            display: none !important;
-          }
-          #printable-thermal-ticket, #printable-thermal-ticket * {
-            visibility: visible !important;
-          }
           html, body {
             margin: 0 !important;
             padding: 0 !important;
-            background: white !important;
+            background: #ffffff !important;
             width: 100% !important;
             height: 100% !important;
             overflow: hidden !important;
-            display: flex !important;
-            justify-content: center !important;
-            align-items: flex-start !important;
+          }
+          body * {
+            visibility: hidden !important;
+          }
+          #printable-thermal-ticket, #printable-thermal-ticket * {
+            visibility: visible !important;
           }
           #printable-thermal-ticket {
             position: fixed !important;
@@ -165,6 +162,8 @@ export const TicketPrintModal: React.FC = () => {
             page-break-after: avoid !important;
             page-break-before: avoid !important;
             page-break-inside: avoid !important;
+            background: #ffffff !important;
+            color: #000000 !important;
           }
         }
       `}</style>

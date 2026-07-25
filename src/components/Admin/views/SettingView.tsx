@@ -264,24 +264,101 @@ export const SettingView: React.FC = () => {
                 </select>
               </div>
 
-              <div className="sm:col-span-2">
-                <label className="text-xs font-bold text-slate-700 block mb-1">Logo Struk (Upload)</label>
-                <div className="flex gap-2">
-                  <label className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 bg-slate-50 border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-700 cursor-pointer hover:border-red-500">
-                    <Upload className="w-3.5 h-3.5 text-red-600" />
-                    <span>Upload Logo</span>
-                    <input type="file" accept="image/*" onChange={handleLogoUpload} className="hidden" />
+              <div className="sm:col-span-2 pt-2 border-t border-slate-100">
+                <label className="text-xs font-black text-slate-800 uppercase tracking-wider block mb-2">
+                  Elemen Tampilan Struk / Tiket Antrian
+                </label>
+                <div className="grid grid-cols-2 sm:grid-cols-3 gap-2 text-xs font-bold text-slate-700">
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showEstimatedWait ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showEstimatedWait: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Estimasi Menunggu / Sesi</span>
                   </label>
-                  {localPrintSettings.logoUrl && (
-                    <button
-                      type="button"
-                      onClick={() => setLocalPrintSettings({ ...localPrintSettings, logoUrl: '' })}
-                      className="px-2.5 py-1.5 bg-red-100 text-red-700 text-xs font-bold rounded-xl"
-                    >
-                      Hapus
-                    </button>
-                  )}
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showTicketNumber ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showTicketNumber: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Nomor Tiket Antrian</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showBoothName ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showBoothName: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Nama Booth / Sesi</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showBranchName ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showBranchName: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Nama Studio / Cabang</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showDateTime ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showDateTime: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Tanggal & Waktu</span>
+                  </label>
+
+                  <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
+                    <input
+                      type="checkbox"
+                      checked={localPrintSettings.showQR ?? true}
+                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showQR: e.target.checked })}
+                      className="accent-red-600 rounded"
+                    />
+                    <span>Tampilkan QR Code</span>
+                  </label>
                 </div>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Gaya Garis Pembatas (Divider)</label>
+                <select
+                  value={localPrintSettings.dividerStyle || 'dashed'}
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, dividerStyle: e.target.value as any })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  <option value="dashed">Putus-putus (-----)</option>
+                  <option value="double">Garis Ganda (════)</option>
+                  <option value="dotted">Titik-titik (.....)</option>
+                  <option value="solid">Garis Solid (────)</option>
+                  <option value="stars">Bintang-bintang (****)</option>
+                  <option value="diamonds">Ornamen Berlian (◆◇◆◇)</option>
+                </select>
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Gaya Tipografi Font</label>
+                <select
+                  value={localPrintSettings.fontFamily || 'monospace'}
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, fontFamily: e.target.value as any })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer"
+                >
+                  <option value="monospace">Thermal Monospace (Khas POS)</option>
+                  <option value="sans-serif">Sans-serif Modern Clean</option>
+                  <option value="serif">Serif Vintage Photobooth</option>
+                  <option value="display">Display Uppercase Bold</option>
+                </select>
               </div>
             </div>
 

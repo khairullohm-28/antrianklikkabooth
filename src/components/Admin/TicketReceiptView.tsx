@@ -63,22 +63,33 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
     }
   };
 
-  // Generate Divider Character Line
+  // Generate Divider Line (spans 100% edge-to-edge)
   const renderDivider = () => {
     const style = settings.dividerStyle || 'dashed';
-    let content = spec.dividerText;
 
-    if (style === 'dashed') content = spec.dividerText;
-    else if (style === 'double') content = spec.dividerText.replace(/-/g, '═');
-    else if (style === 'dotted') content = spec.dividerText.replace(/-/g, '.');
-    else if (style === 'solid') content = spec.dividerText.replace(/-/g, '─');
-    else if (style === 'stars') content = spec.dividerText.replace(/-/g, '*');
-    else if (style === 'diamonds') content = '◆◇'.repeat(Math.max(3, Math.floor(spec.widthMm / 8)));
-    else if (style === 'custom') content = settings.dividerText || spec.dividerText;
+    if (style === 'dashed') {
+      return <div className="w-full my-1 border-t border-dashed border-black opacity-80" />;
+    }
+    if (style === 'double') {
+      return <div className="w-full my-1 border-t-2 border-double border-black opacity-80" />;
+    }
+    if (style === 'dotted') {
+      return <div className="w-full my-1 border-t border-dotted border-black opacity-80" />;
+    }
+    if (style === 'solid') {
+      return <div className="w-full my-1 border-t border-solid border-black opacity-80" />;
+    }
+
+    let pattern = '*';
+    if (style === 'stars') pattern = '★ ';
+    else if (style === 'diamonds') pattern = '◆◇';
+    else if (style === 'custom') pattern = settings.dividerText || '-';
+
+    const repeated = pattern.repeat(60);
 
     return (
-      <div className="text-black text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-80">
-        {content}
+      <div className="w-full text-black text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-80 text-center">
+        {repeated}
       </div>
     );
   };
