@@ -124,6 +124,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const logoutAdmin = useCallback(() => {
     setIsAdminLoggedIn(false);
     sessionStorage.removeItem('photobooth_admin_logged_in');
+    localStorage.removeItem('photobooth_admin_active_tab');
   }, []);
 
   // UI state

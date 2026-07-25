@@ -151,41 +151,78 @@ export const SettingView: React.FC = () => {
             {/* Form Fields */}
             <div className="grid grid-cols-1 sm:grid-cols-2 gap-4 pt-2">
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Nama Studio / Toko</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Nama Studio / Cabang</label>
                 <input
                   type="text"
                   value={localPrintSettings.branchName || ''}
+                  placeholder="Photobooth Studio - Cabang Utama"
                   onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, branchName: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Judul Struk Tiket</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Judul Utama Struk</label>
                 <input
                   type="text"
-                  value={localPrintSettings.receiptTitle || ''}
-                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, receiptTitle: e.target.value })}
+                  value={localPrintSettings.headerTitle || ''}
+                  placeholder="NOMOR ANTRIAN"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, headerTitle: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Pesan / Slogan Header</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Sub-Judul Tiket (Sub Header)</label>
                 <input
                   type="text"
-                  value={localPrintSettings.headerMessage || ''}
-                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, headerMessage: e.target.value })}
+                  value={localPrintSettings.subHeaderTitle || ''}
+                  placeholder="STUDIO CELEBRATION TICKET"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, subHeaderTitle: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-semibold"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Petunjuk QR Code - Baris 1</label>
+                <input
+                  type="text"
+                  value={localPrintSettings.qrSubText1 || ''}
+                  placeholder="Scan QR di bawah untuk:"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, qrSubText1: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
                 />
               </div>
 
               <div>
-                <label className="text-xs font-bold text-slate-700 block mb-1">Pesan Footer Struk</label>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Petunjuk QR Code - Baris 2</label>
                 <input
                   type="text"
-                  value={localPrintSettings.footerMessage || ''}
-                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, footerMessage: e.target.value })}
+                  value={localPrintSettings.qrSubText2 || ''}
+                  placeholder="Cek posisi antrian real-time"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, qrSubText2: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
+                />
+              </div>
+
+              <div>
+                <label className="text-xs font-bold text-slate-700 block mb-1">Catatan Struk / Ketentuan Validitas</label>
+                <input
+                  type="text"
+                  value={localPrintSettings.customNote || ''}
+                  placeholder="Tiket berlaku hanya untuk hari ini"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, customNote: e.target.value })}
+                  className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
+                />
+              </div>
+
+              <div className="sm:col-span-2">
+                <label className="text-xs font-bold text-slate-700 block mb-1">Pesan Footer Struk (Penutup)</label>
+                <input
+                  type="text"
+                  value={localPrintSettings.footerText || ''}
+                  placeholder="Harap menunggu sampai nomor dipanggil. Terima kasih!"
+                  onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, footerText: e.target.value })}
                   className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-medium"
                 />
               </div>
@@ -199,7 +236,8 @@ export const SettingView: React.FC = () => {
                 >
                   <option value="58mm">58mm (Kertas Thermal Standar Kasir)</option>
                   <option value="80mm">80mm (Kertas Thermal Lebar)</option>
-                  <option value="custom">Custom Auto</option>
+                  <option value="78x100mm">78x100mm (Label Besar)</option>
+                  <option value="50x30mm">50x30mm (Stiker Small)</option>
                 </select>
               </div>
 

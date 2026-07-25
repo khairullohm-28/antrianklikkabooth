@@ -45,20 +45,30 @@ export function playChimeSound() {
   }
 }
 
+export function playDoubleChimeSound() {
+  playChimeSound();
+  setTimeout(() => {
+    playChimeSound();
+  }, 500);
+}
+
 export function announceQueueVoice(ticketNumber: string, boothName: string) {
   try {
-    if (typeof window === 'undefined' || !('speechSynthesis' in window) || !window.speechSynthesis) {
+    if (typeof window === 'undefined') return;
+
+    // Play chime first
+    playChimeSound();
+
+    if (!('speechSynthesis' in window) || !window.speechSynthesis) {
       return;
     }
 
-    // Play initial chime
-    playChimeSound();
-
-    // Format text for speech e.g. "Nomor antrian V I N 0 0 1, silakan menuju Vintage Booth"
+    // Format ticket code e.g. "VIN001" -> "V I N, 0 0 1"
     const formattedTicket = ticketNumber
+      .replace(/([A-Za-z]+)(\d+)/, '$1 $2')
       .split('')
-      .map((char) => (isNaN(Number(char)) ? char : ` ${char}`))
-      .join('');
+      .map((char) => (isNaN(Number(char)) ? char : `${char} `))
+      .join(' ');
 
     const speechText = `Nomor antrian ${formattedTicket}, silakan menuju ${boothName}.`;
 
@@ -66,18 +76,20 @@ export function announceQueueVoice(ticketNumber: string, boothName: string) {
       try {
         if (!('speechSynthesis' in window) || !window.speechSynthesis) return;
 
-        window.speechSynthesis.cancel(); // Stop prior speech
+        window.speechSynthesis.cancel(); // Clear any queued speech
 
         const utterance = new SpeechSynthesisUtterance(speechText);
         utterance.lang = 'id-ID';
-        utterance.rate = 0.9; // slightly slower for clear broadcast
+        utterance.rate = 0.88; // Natural clear Indonesian cadence
         utterance.pitch = 1.0;
 
         utterance.onerror = (e) => {
-          console.warn('Speech synthesis utterance warning:', e);
+          if (e.error !== 'canceled' && e.error !== 'interrupted') {
+            console.warn('Speech synthesis utterance info:', e.error || e);
+          }
         };
 
-        // Find Indonesian voice if available
+        // Select Indonesian voice if available
         try {
           const voices = window.speechSynthesis.getVoices();
           if (Array.isArray(voices) && voices.length > 0) {
@@ -94,7 +106,7 @@ export function announceQueueVoice(ticketNumber: string, boothName: string) {
       } catch (err) {
         console.warn('Speech synthesis inner error:', err);
       }
-    }, 400);
+    }, 850);
   } catch (err) {
     console.warn('announceQueueVoice error:', err);
   }

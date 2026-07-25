@@ -1,8 +1,8 @@
 import React, { useState, useEffect, useMemo } from 'react';
 import { useQueue } from '../../context/QueueContext';
-import { Bell, Volume2, Clock, Search, QrCode, Sparkles, CheckCircle2, Smartphone, RefreshCw, Users, Camera } from 'lucide-react';
+import { Bell, Volume2, Clock, Search, QrCode, Sparkles, CheckCircle2, RefreshCw, Users, Camera } from 'lucide-react';
 import confetti from 'canvas-confetti';
-import { playChimeSound } from '../../utils/audio';
+import { playDoubleChimeSound } from '../../utils/audio';
 
 export const CustomerDashboard: React.FC = () => {
   const {
@@ -114,25 +114,13 @@ export const CustomerDashboard: React.FC = () => {
   // Check if customer ticket is CALLED right now!
   const isMyTurn = currentCustomerTicket && currentCustomerTicket.status === 'called';
 
-  // Helper to trigger device vibration (Haptic Feedback)
-  const triggerVibration = () => {
-    if (typeof window !== 'undefined' && 'navigator' in window && 'vibrate' in navigator) {
-      try {
-        navigator.vibrate([300, 100, 300, 100, 500, 100, 500]);
-      } catch (err) {
-        console.log('Device vibration error:', err);
-      }
-    }
-  };
-
-  // Trigger celebration, sound & vibration whenever ticket is called
+  // Trigger celebration & sound whenever ticket is called
   useEffect(() => {
     if (!currentCustomerTicket) return;
 
     if (isMyTurn && !hasCelebrated) {
       setHasCelebrated(true);
-      playChimeSound();
-      triggerVibration();
+      playDoubleChimeSound();
       try {
         confetti({
           particleCount: 120,
@@ -154,8 +142,7 @@ export const CustomerDashboard: React.FC = () => {
       lastCalledTicket.ticketNumber.trim().toUpperCase() === currentCustomerTicket.ticketNumber.trim().toUpperCase();
 
     if (isMatch) {
-      playChimeSound();
-      triggerVibration();
+      playDoubleChimeSound();
       try {
         confetti({
           particleCount: 120,
@@ -192,8 +179,7 @@ export const CustomerDashboard: React.FC = () => {
 
   const handleToggleNotify = () => {
     if (!soundEnabled) {
-      playChimeSound();
-      triggerVibration();
+      playDoubleChimeSound();
       setSoundEnabled(true);
     } else {
       setSoundEnabled(false);
@@ -329,7 +315,7 @@ export const CustomerDashboard: React.FC = () => {
             )}
           </div>
 
-          {/* Sound & Vibration Notification Toggle Bar */}
+          {/* Sound Notification Toggle Bar */}
           <div className="p-4 bg-white rounded-2xl border border-slate-200 shadow-sm flex flex-col sm:flex-row items-center justify-between gap-3">
             <div className="flex items-center gap-3">
               <div
@@ -341,14 +327,11 @@ export const CustomerDashboard: React.FC = () => {
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara & Getar</h3>
-                  <span className="inline-flex items-center gap-0.5 text-[10px] font-extrabold bg-red-100 text-red-700 px-2 py-0.5 rounded-md">
-                    <Smartphone className="w-3 h-3" /> Getar
-                  </span>
+                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara HP</h3>
                 </div>
                 <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                   {soundEnabled
-                    ? 'Suara & getar aktif saat giliran dipanggil.'
+                    ? 'Suara lonceng aktif saat giliran dipanggil.'
                     : 'Aktifkan agar HP berbunyi saat giliran tiba.'}
                 </p>
               </div>
@@ -364,7 +347,7 @@ export const CustomerDashboard: React.FC = () => {
               }`}
             >
               <Volume2 className="w-4 h-4" />
-              <span>{soundEnabled ? 'Aktif' : 'Aktifkan Suara & Getar'}</span>
+              <span>{soundEnabled ? 'Suara Aktif' : 'Aktifkan Suara Lonceng'}</span>
             </button>
           </div>
         </div>

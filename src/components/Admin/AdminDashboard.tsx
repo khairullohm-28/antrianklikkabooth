@@ -3,6 +3,7 @@ import { useQueue } from '../../context/QueueContext';
 import { AdminLogin } from './AdminLogin';
 import { SettingsModal } from './SettingsModal';
 import { TicketPrintModal } from './TicketPrintModal';
+import { AdminSidebar } from './AdminSidebar';
 import { Booth } from '../../types';
 
 // Views
@@ -14,19 +15,9 @@ import { SettingView } from './views/SettingView';
 import { LaporanView } from './views/LaporanView';
 
 import {
-  LayoutDashboard,
-  PlaySquare,
-  Layers,
-  Tv,
-  Settings,
-  FileSpreadsheet,
-  LogOut,
   Menu,
   X,
-  ShieldCheck,
   Camera,
-  ChevronLeft,
-  ChevronRight,
 } from 'lucide-react';
 
 export type AdminTab =
@@ -40,7 +31,29 @@ export type AdminTab =
 export const AdminDashboard: React.FC = () => {
   const { isAdminLoggedIn, logoutAdmin, printSettings } = useQueue();
 
-  const [activeTab, setActiveTab] = useState<AdminTab>('beranda');
+  const [activeTab, setActiveTab] = useState<AdminTab>(() => {
+    try {
+      const saved = localStorage.getItem('photobooth_admin_active_tab');
+      if (
+        saved &&
+        ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(saved)
+      ) {
+        return saved as AdminTab;
+      }
+    } catch (e) {
+      console.error(e);
+    }
+    return 'operasional';
+  });
+
+  React.useEffect(() => {
+    try {
+      localStorage.setItem('photobooth_admin_active_tab', activeTab);
+    } catch (e) {
+      console.error(e);
+    }
+  }, [activeTab]);
+
   const [isMobileSidebarOpen, setIsMobileSidebarOpen] = useState(false);
   const [isSidebarCollapsed, setIsSidebarCollapsed] = useState(false);
 
@@ -61,39 +74,6 @@ export const AdminDashboard: React.FC = () => {
   const handleEditBoothFromCard = (booth: Booth) => {
     setActiveTab('manajemen');
   };
-
-  const navItems = [
-    {
-      id: 'beranda' as AdminTab,
-      label: 'BERANDA',
-      icon: LayoutDashboard,
-    },
-    {
-      id: 'operasional' as AdminTab,
-      label: 'OPERASIONAL',
-      icon: PlaySquare,
-    },
-    {
-      id: 'manajemen' as AdminTab,
-      label: 'MANAJEMEN',
-      icon: Layers,
-    },
-    {
-      id: 'media_display' as AdminTab,
-      label: 'MEDIA DISPLAY',
-      icon: Tv,
-    },
-    {
-      id: 'setting' as AdminTab,
-      label: 'SETTING',
-      icon: Settings,
-    },
-    {
-      id: 'laporan' as AdminTab,
-      label: 'LAPORAN & ANALISIS',
-      icon: FileSpreadsheet,
-    },
-  ];
 
   const logoUrl = printSettings?.monitorLogoUrl;
 
@@ -124,113 +104,17 @@ export const AdminDashboard: React.FC = () => {
         </button>
       </div>
 
-      {/* MOBILE BACKDROP DRAWER */}
-      {isMobileSidebarOpen && (
-        <div
-          className="fixed inset-0 bg-slate-950/60 backdrop-blur-sm z-40 md:hidden"
-          onClick={() => setIsMobileSidebarOpen(false)}
-        />
-      )}
-
-      {/* LEFT SIDEBAR NAVIGATION */}
-      <aside
-        className={`bg-slate-900 text-white flex-col justify-between z-50 shrink-0 transition-all duration-300 ${
-          isSidebarCollapsed ? 'w-20' : 'w-64'
-        } ${
-          isMobileSidebarOpen
-            ? 'fixed inset-y-0 left-0 flex shadow-2xl w-64'
-            : 'hidden md:flex sticky top-0 h-screen'
-        }`}
-      >
-        {/* SIDEBAR HEADER */}
-        <div className="p-4 border-b border-slate-800 flex items-center justify-between">
-          <div className="flex items-center gap-3 overflow-hidden">
-            {logoUrl ? (
-              <img src={logoUrl} alt="Logo" className="w-9 h-9 rounded-xl object-contain bg-white p-1 shrink-0 shadow-sm" />
-            ) : (
-              <div className="w-9 h-9 rounded-2xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white shrink-0 shadow-lg shadow-red-600/30">
-                <Camera className="w-5 h-5" />
-              </div>
-            )}
-            {!isSidebarCollapsed && (
-              <div className="truncate">
-                <h2 className="font-black text-sm tracking-tight text-white leading-tight truncate">
-                  Studio Admin
-                </h2>
-                <span className="inline-flex items-center gap-1 text-[10px] font-extrabold text-emerald-400">
-                  <ShieldCheck className="w-3 h-3" /> Online
-                </span>
-              </div>
-            )}
-          </div>
-
-          <button
-            onClick={() => setIsSidebarCollapsed(!isSidebarCollapsed)}
-            className="hidden md:flex p-1.5 bg-slate-800 hover:bg-slate-700 text-slate-300 rounded-xl transition-colors shrink-0"
-            title={isSidebarCollapsed ? "Sembunyikan / Munculkan Sidebar" : "Kecilkan Sidebar"}
-          >
-            {isSidebarCollapsed ? <ChevronRight className="w-4 h-4" /> : <ChevronLeft className="w-4 h-4" />}
-          </button>
-        </div>
-
-        {/* SIDEBAR MENU ITEMS */}
-        <div className="p-2 space-y-1 overflow-y-auto flex-1">
-          {!isSidebarCollapsed && (
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-3 py-1.5 block">
-              Menu Utama
-            </span>
-          )}
-
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
-
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileSidebarOpen(false);
-                }}
-                title={isSidebarCollapsed ? item.label : undefined}
-                className={`w-full p-2.5 rounded-2xl text-left transition-all flex items-center gap-3 group active:scale-95 ${
-                  isSidebarCollapsed ? 'justify-center' : ''
-                } ${
-                  isActive
-                    ? 'bg-red-600 text-white font-black shadow-lg shadow-red-600/25 border border-red-500/50'
-                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-bold'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-red-400'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                {!isSidebarCollapsed && (
-                  <span className="text-xs font-black tracking-wide truncate">{item.label}</span>
-                )}
-              </button>
-            );
-          })}
-        </div>
-
-        {/* SIDEBAR FOOTER & LOGOUT BUTTON */}
-        <div className="p-3 border-t border-slate-800 bg-slate-950/50">
-          <button
-            id="btn-admin-logout"
-            onClick={logoutAdmin}
-            title={isSidebarCollapsed ? "LOG OUT" : undefined}
-            className={`w-full py-2.5 px-3 bg-slate-800 hover:bg-rose-950/80 hover:text-rose-300 text-slate-200 rounded-2xl text-xs font-black border border-slate-700/80 transition-all flex items-center justify-center gap-2 active:scale-95 shadow-sm ${
-              isSidebarCollapsed ? 'justify-center' : ''
-            }`}
-          >
-            <LogOut className="w-4 h-4 text-rose-400 shrink-0" />
-            {!isSidebarCollapsed && <span>LOG OUT</span>}
-          </button>
-        </div>
-      </aside>
+      {/* COLLAPSIBLE SIDEBAR COMPONENT */}
+      <AdminSidebar
+        activeTab={activeTab}
+        setActiveTab={setActiveTab}
+        isMobileSidebarOpen={isMobileSidebarOpen}
+        setIsMobileSidebarOpen={setIsMobileSidebarOpen}
+        isSidebarCollapsed={isSidebarCollapsed}
+        setIsSidebarCollapsed={setIsSidebarCollapsed}
+        logoutAdmin={logoutAdmin}
+        logoUrl={logoUrl}
+      />
 
       {/* MAIN CONTENT AREA */}
       <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden max-w-7xl mx-auto w-full">
@@ -259,3 +143,4 @@ export const AdminDashboard: React.FC = () => {
     </div>
   );
 };
+
