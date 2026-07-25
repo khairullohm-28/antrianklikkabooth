@@ -472,12 +472,19 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       (snapshot) => {
         // Skip updating state if local user action occurred within the last 1.2 seconds
         if (Date.now() - lastMutationTimeRef.current < 1200) {
+          console.log('[QueueTrace FIRESTORE_SYNC] Skipping snapshot due to recent local mutation (<1200ms)');
           return;
         }
 
         if (snapshot.exists()) {
           const data = snapshot.data();
           if (data) {
+            console.log('[QueueTrace FIRESTORE_SYNC] Snapshot synced:', {
+              timestamp: new Date().toLocaleTimeString('id-ID'),
+              ticketsCount: Array.isArray(data.tickets) ? data.tickets.length : 0,
+              calledTickets: Array.isArray(data.tickets) ? data.tickets.filter((t: any) => t.status === 'called').map((t: any) => t.ticketNumber) : [],
+              lastCalled: data.lastCalledTicket?.ticketNumber || 'None',
+            });
             if (Array.isArray(data.booths)) {
               setBooths(data.booths);
               try { localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(data.booths)); } catch {}
@@ -623,6 +630,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Prevent double input within 450ms
       const now = Date.now();
       if (now - lastActionTimeRef.current < 450) {
+        console.warn('[QueueTrace CALL_NEXT] Ignored duplicate click (<450ms)');
         return null;
       }
       lastActionTimeRef.current = now;
@@ -635,10 +643,20 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         .filter((t) => t.boothId === boothId && t.status === 'waiting')
         .sort((a, b) => a.sequence - b.sequence);
 
-      if (waiting.length === 0) return null;
+      if (waiting.length === 0) {
+        console.log(`[QueueTrace CALL_NEXT] No waiting tickets for booth ${booth.name}`);
+        return null;
+      }
 
       const ticketToCall = waiting[0];
       const nowIso = new Date().toISOString();
+
+      const prevCalled = tickets.filter((t) => t.boothId === boothId && t.status === 'called');
+      if (prevCalled.length > 0) {
+        console.log(`[QueueTrace CALL_NEXT] Transitioning previous called tickets to completed for booth ${booth.name}:`, prevCalled.map(t => t.ticketNumber));
+      }
+
+      console.log(`[QueueTrace CALL_NEXT] Calling ticket ${ticketToCall.ticketNumber} for booth ${booth.name}`);
 
       const updatedTickets = tickets.map((t) => {
         if (t.boothId === boothId && t.status === 'called') {
