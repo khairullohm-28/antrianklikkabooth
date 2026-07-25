@@ -473,15 +473,15 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setSelectedTicketForCustomer(found);
         } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
-          const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || booths[0];
+          const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
           const virtualTicket: Ticket = {
             id: `virtual-${cleanNo}`,
             boothId: matchedBooth ? matchedBooth.id : 'b1',
             boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
             boothCode: matchedBooth ? matchedBooth.code : boothCode,
             ticketNumber: cleanNo,
-            sequence: 999,
-            status: 'waiting',
+            sequence: 0,
+            status: 'completed',
             createdAt: new Date().toISOString(),
           };
           setSelectedTicketForCustomer(virtualTicket);

@@ -33,12 +33,27 @@ export const AdminDashboard: React.FC = () => {
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     try {
-      const saved = localStorage.getItem('photobooth_admin_active_tab');
-      if (
-        saved &&
-        ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(saved)
-      ) {
-        return saved as AdminTab;
+      if (typeof window !== 'undefined') {
+        // 1. Check URL query string e.g. ?tab=operasional
+        const params = new URLSearchParams(window.location.search);
+        const urlTab = params.get('tab');
+        if (
+          urlTab &&
+          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(urlTab)
+        ) {
+          return urlTab as AdminTab;
+        }
+
+        // 2. Fallback to sessionStorage / localStorage
+        const saved =
+          sessionStorage.getItem('photobooth_admin_active_tab') ||
+          localStorage.getItem('photobooth_admin_active_tab');
+        if (
+          saved &&
+          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(saved)
+        ) {
+          return saved as AdminTab;
+        }
       }
     } catch (e) {
       console.error(e);
@@ -48,7 +63,14 @@ export const AdminDashboard: React.FC = () => {
 
   React.useEffect(() => {
     try {
-      localStorage.setItem('photobooth_admin_active_tab', activeTab);
+      if (typeof window !== 'undefined') {
+        sessionStorage.setItem('photobooth_admin_active_tab', activeTab);
+        localStorage.setItem('photobooth_admin_active_tab', activeTab);
+
+        const url = new URL(window.location.href);
+        url.searchParams.set('tab', activeTab);
+        window.history.replaceState({}, '', url.toString());
+      }
     } catch (e) {
       console.error(e);
     }

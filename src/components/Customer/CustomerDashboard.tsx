@@ -40,38 +40,42 @@ export const CustomerDashboard: React.FC = () => {
   // Parse ticket parameter from URL or hash on load
   useEffect(() => {
     if (typeof window === 'undefined') return;
-    const searchParams = new URLSearchParams(window.location.search);
-    const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
-    const ticketNo =
-      searchParams.get('ticket') ||
-      searchParams.get('t') ||
-      searchParams.get('ticketNumber') ||
-      searchParams.get('no') ||
-      hashParams.get('ticket') ||
-      hashParams.get('t');
+    try {
+      const searchParams = new URLSearchParams(window.location.search);
+      const hashParams = new URLSearchParams(window.location.hash.replace(/^#\/?/, ''));
+      const ticketNo =
+        searchParams.get('ticket') ||
+        searchParams.get('t') ||
+        searchParams.get('ticketNumber') ||
+        searchParams.get('no') ||
+        hashParams.get('ticket') ||
+        hashParams.get('t');
 
-    if (ticketNo) {
-      const cleanNo = ticketNo.trim().toUpperCase();
-      setInputTicket(cleanNo);
-      const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
-      if (found) {
-        setSelectedTicketForCustomer(found);
-      } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
-        const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
-        const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || booths[0];
-        // For completed or cleared ticket links, set completed status so it doesn't cause broken calculations or server errors
-        const expiredTicket = {
-          id: `expired-${cleanNo}`,
-          boothId: matchedBooth ? matchedBooth.id : 'b1',
-          boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
-          boothCode: matchedBooth ? matchedBooth.code : boothCode,
-          ticketNumber: cleanNo,
-          sequence: 0,
-          status: 'completed' as const,
-          createdAt: new Date().toISOString(),
-        };
-        setSelectedTicketForCustomer(expiredTicket);
+      if (ticketNo) {
+        const cleanNo = ticketNo.trim().toUpperCase();
+        setInputTicket(cleanNo);
+        const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
+        if (found) {
+          setSelectedTicketForCustomer(found);
+        } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
+          const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
+          const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
+          // For completed, deleted or unknown ticket links, set completed status so it doesn't cause broken calculations or server errors
+          const expiredTicket = {
+            id: `expired-${cleanNo}`,
+            boothId: matchedBooth ? matchedBooth.id : 'b1',
+            boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
+            boothCode: matchedBooth ? matchedBooth.code : boothCode,
+            ticketNumber: cleanNo,
+            sequence: 0,
+            status: 'completed' as const,
+            createdAt: new Date().toISOString(),
+          };
+          setSelectedTicketForCustomer(expiredTicket);
+        }
       }
+    } catch (err) {
+      console.warn('URL ticket parsing error:', err);
     }
   }, [tickets, booths, selectedTicketForCustomer, setSelectedTicketForCustomer]);
 
@@ -88,8 +92,8 @@ export const CustomerDashboard: React.FC = () => {
   }, [tickets, selectedTicketForCustomer]);
 
   // Find booth details for customer ticket
-  const targetBooth = currentCustomerTicket
-    ? booths.find((b) => b.id === currentCustomerTicket.boothId)
+  const targetBooth = currentCustomerTicket && booths.length > 0
+    ? booths.find((b) => b.id === currentCustomerTicket.boothId) || booths[0]
     : null;
 
   // Find current active called ticket for this booth
@@ -108,9 +112,10 @@ export const CustomerDashboard: React.FC = () => {
     : 0;
 
   // Estimated wait time in minutes
-  const estimatedWaitMinutes = targetBooth
-    ? Math.max(0, ticketsAhead * targetBooth.avgTimePerSession)
-    : 0;
+  const avgTime = targetBooth?.avgTimePerSession && !isNaN(Number(targetBooth.avgTimePerSession))
+    ? Number(targetBooth.avgTimePerSession)
+    : 5;
+  const estimatedWaitMinutes = Math.max(0, ticketsAhead * avgTime);
 
   // Check if customer ticket is CALLED right now!
   const isMyTurn = currentCustomerTicket && currentCustomerTicket.status === 'called';
@@ -142,7 +147,8 @@ export const CustomerDashboard: React.FC = () => {
       lastCalledTicket.id === currentCustomerTicket.id ||
       lastCalledTicket.ticketNumber.trim().toUpperCase() === currentCustomerTicket.ticketNumber.trim().toUpperCase();
 
-    if (isMatch) {
+    if (isMatch && !hasCelebrated) {
+      setHasCelebrated(true);
       playDoubleChimeSound();
       try {
         confetti({
@@ -154,7 +160,7 @@ export const CustomerDashboard: React.FC = () => {
         console.log(err);
       }
     }
-  }, [lastCalledTicket, currentCustomerTicket]);
+  }, [lastCalledTicket, currentCustomerTicket, hasCelebrated]);
 
   const handleSearchTicket = (e: React.FormEvent) => {
     e.preventDefault();
