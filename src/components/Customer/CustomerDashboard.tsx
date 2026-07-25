@@ -120,13 +120,25 @@ export const CustomerDashboard: React.FC = () => {
   // Check if customer ticket is CALLED right now!
   const isMyTurn = currentCustomerTicket && currentCustomerTicket.status === 'called';
 
-  // Trigger celebration & sound whenever ticket is called
+  // Trigger celebration & pleasant chime whenever ticket is called
   useEffect(() => {
     if (!currentCustomerTicket) return;
 
-    if (isMyTurn && !hasCelebrated) {
+    const isMatchWithLastCalled =
+      lastCalledTicket &&
+      (lastCalledTicket.id === currentCustomerTicket.id ||
+        lastCalledTicket.ticketNumber.trim().toUpperCase() === currentCustomerTicket.ticketNumber.trim().toUpperCase());
+
+    if ((isMyTurn || isMatchWithLastCalled) && !hasCelebrated) {
       setHasCelebrated(true);
-      playDoubleChimeSound();
+      try {
+        if (soundEnabled) {
+          playDoubleChimeSound();
+        }
+      } catch (audioErr) {
+        console.warn('Customer chime playback warning:', audioErr);
+      }
+
       try {
         confetti({
           particleCount: 120,
@@ -134,33 +146,10 @@ export const CustomerDashboard: React.FC = () => {
           origin: { y: 0.5 },
         });
       } catch (err) {
-        console.log(err);
+        console.warn('Confetti error:', err);
       }
     }
-  }, [isMyTurn, currentCustomerTicket, hasCelebrated]);
-
-  // React directly when Admin calls next ticket matching current customer
-  useEffect(() => {
-    if (!lastCalledTicket || !currentCustomerTicket) return;
-
-    const isMatch =
-      lastCalledTicket.id === currentCustomerTicket.id ||
-      lastCalledTicket.ticketNumber.trim().toUpperCase() === currentCustomerTicket.ticketNumber.trim().toUpperCase();
-
-    if (isMatch && !hasCelebrated) {
-      setHasCelebrated(true);
-      playDoubleChimeSound();
-      try {
-        confetti({
-          particleCount: 120,
-          spread: 90,
-          origin: { y: 0.5 },
-        });
-      } catch (err) {
-        console.log(err);
-      }
-    }
-  }, [lastCalledTicket, currentCustomerTicket, hasCelebrated]);
+  }, [isMyTurn, currentCustomerTicket, lastCalledTicket, hasCelebrated, soundEnabled]);
 
   const handleSearchTicket = (e: React.FormEvent) => {
     e.preventDefault();

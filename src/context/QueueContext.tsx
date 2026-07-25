@@ -394,10 +394,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           }
           if (data.logs) setLogs(data.logs);
           if (data.lastCalledTicket) setLastCalledTicket(data.lastCalledTicket);
-        } else if (type === 'CALL_ANNOUNCEMENT') {
-          if (soundEnabled && data.ticket && data.boothName) {
-            announceQueueVoice(data.ticket.ticketNumber, data.boothName);
-          }
         }
       };
 
@@ -555,22 +551,12 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             }
             if (data.lastCalledTicket !== undefined) {
               const nextLast = data.lastCalledTicket as Ticket | null;
-              setLastCalledTicket((prevLast) => {
-                if (
-                  nextLast &&
-                  (!prevLast || prevLast.id !== nextLast.id || prevLast.calledAt !== nextLast.calledAt)
-                ) {
-                  if (soundEnabled) {
-                    announceQueueVoice(nextLast.ticketNumber, nextLast.boothName);
-                  }
-                }
-                if (nextLast) {
-                  try { localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(nextLast)); } catch {}
-                } else {
-                  try { localStorage.removeItem('photobooth_last_called_ticket'); } catch {}
-                }
-                return nextLast;
-              });
+              setLastCalledTicket(nextLast);
+              if (nextLast) {
+                try { localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(nextLast)); } catch {}
+              } else {
+                try { localStorage.removeItem('photobooth_last_called_ticket'); } catch {}
+              }
             }
           }
         }
