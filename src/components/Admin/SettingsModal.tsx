@@ -1,5 +1,6 @@
 import React, { useState } from 'react';
 import { useQueue } from '../../context/QueueContext';
+import { getPaperDimensionSpec } from '../../utils/paperDimensions';
 import {
   Booth,
   PrintSettings,
@@ -208,7 +209,9 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     const printElement = document.getElementById('designer-preview-ticket');
     if (!printElement) return;
 
-    const windowPrint = window.open('', '', 'width=400,height=600');
+    const spec = getPaperDimensionSpec(localPrintSettings.paperWidth);
+
+    const windowPrint = window.open('', '', 'width=500,height=700');
     if (!windowPrint) return;
 
     windowPrint.document.write(`
@@ -216,8 +219,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
         <head>
           <title>Test Print Label Tiket</title>
           <style>
-            body { margin: 0; padding: 10px; font-family: monospace; display: flex; justify-content: center; }
-            @media print { body { padding: 0; } }
+            @page {
+              size: ${spec.pageSizeCss};
+              margin: 0;
+            }
+            body { margin: 0; padding: 0; font-family: monospace; display: flex; justify-content: center; background: white; }
+            @media print { body { padding: 0; margin: 0; } }
           </style>
           <script src="https://cdn.tailwindcss.com"></script>
         </head>
@@ -226,7 +233,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
           <script>
             window.onload = function() {
               window.print();
-              setTimeout(function() { window.close(); }, 500);
+              setTimeout(function() { window.close(); }, 600);
             };
           </script>
         </body>
@@ -885,14 +892,61 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
                                 paperWidth: e.target.value as TicketPaperWidth,
                               })
                             }
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-xs focus:ring-2 focus:ring-red-500"
+                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold text-xs focus:ring-2 focus:ring-red-500 mb-2"
                           >
-                            <option value="58mm">58mm (Standar Thermal POS Kasir)</option>
-                            <option value="80mm">80mm (Thermal POS Lebar)</option>
-                            <option value="78x100mm">78 x 100mm (Label POS Thermal 78x100 Large)</option>
-                            <option value="50x30mm">50 x 30mm (Label Stiker Ringkas)</option>
-                            <option value="80x50mm">80 x 50mm (Label Stiker Besar)</option>
+                            <optgroup label="Roll Continuous Thermal POS">
+                              <option value="58mm">58mm (Roll Thermal Kasir Standard)</option>
+                              <option value="80mm">80mm (Roll Thermal POS Lebar)</option>
+                            </optgroup>
+                            <optgroup label="Label Thermal Kompak / Stiker Ringkas">
+                              <option value="70x20mm">70 x 20 mm (Micro Label 70x20mm)</option>
+                              <option value="50x30mm">50 x 30 mm (Label Stiker 50x30mm)</option>
+                              <option value="50x40mm">50 x 40 mm (Label Stiker 50x40mm)</option>
+                              <option value="57x40mm">57 x 40 mm (Label Stiker 57x40mm)</option>
+                              <option value="60x40mm">60 x 40 mm (Label Stiker 60x40mm)</option>
+                              <option value="80x50mm">80 x 50 mm (Label Stiker 80x50mm)</option>
+                            </optgroup>
+                            <optgroup label="Label Thermal Sedang & Sedang-Tinggi">
+                              <option value="76x100mm">76 x 100 mm (Label Thermal 76x100mm)</option>
+                              <option value="76x130mm">76 x 130 mm (Label Thermal 76x130mm)</option>
+                              <option value="100x100mm">100 x 100 mm (Label Square 100x100mm)</option>
+                            </optgroup>
+                            <optgroup label="Label Thermal Besar & Format A4">
+                              <option value="100x150mm">100 x 150 mm (Label Resi / Shipping 100x150mm)</option>
+                              <option value="100x180mm">100 x 180 mm (Label Thermal 100x180mm)</option>
+                              <option value="100x200mm">100 x 200 mm (Label Thermal 100x200mm)</option>
+                              <option value="210x300mm">210 x 300 mm (Format Kertas A4 / Poster)</option>
+                            </optgroup>
                           </select>
+
+                          {/* Live Dimension Details Info Badge */}
+                          {(() => {
+                            const spec = getPaperDimensionSpec(localPrintSettings.paperWidth);
+                            return (
+                              <div className="p-2.5 bg-slate-50 border border-slate-200 rounded-xl text-[11px] text-slate-700 space-y-1">
+                                <div className="flex items-center justify-between font-extrabold text-slate-900 border-b border-slate-200 pb-1">
+                                  <span>Detail Dimensi Kertas:</span>
+                                  <span className="px-2 py-0.5 bg-red-100 text-red-700 rounded-full text-[10px] uppercase font-black">
+                                    {spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto (Roll)'}
+                                  </span>
+                                </div>
+                                <div className="grid grid-cols-2 gap-1 pt-0.5 font-medium">
+                                  <div>
+                                    <span className="text-slate-400">Lebar:</span> <strong className="text-slate-800">{spec.widthMm} mm</strong> ({spec.widthPx})
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400">Tinggi:</span> <strong className="text-slate-800">{spec.heightMm ? `${spec.heightMm} mm` : 'Auto (Roll)'}</strong>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400">Tipe Kertas:</span> <strong className="text-slate-800">{spec.heightMm ? 'Stiker Label' : 'Gulungan Thermal'}</strong>
+                                  </div>
+                                  <div>
+                                    <span className="text-slate-400">Ukuran QR:</span> <strong className="text-slate-800">{spec.qrSizePx}px</strong>
+                                  </div>
+                                </div>
+                              </div>
+                            );
+                          })()}
                         </div>
 
                         {/* QR Code Toggle */}

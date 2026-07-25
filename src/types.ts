@@ -30,7 +30,23 @@ export type TicketFontFamily = 'monospace' | 'sans-serif' | 'serif' | 'display';
 export type TicketDividerStyle = 'dashed' | 'double' | 'dotted' | 'solid' | 'stars' | 'diamonds' | 'custom';
 export type TicketLabelShape = 'standard' | 'rounded' | 'tear-off' | 'bordered';
 export type TicketDateFormat = 'DD/MM/YYYY, HH:mm' | 'YYYY-MM-DD HH:mm' | 'DD MMM YYYY, HH:mm' | 'MM/DD/YYYY hh:mm A' | 'HH:mm (Time Only)';
-export type TicketPaperWidth = '58mm' | '80mm' | '50x30mm' | '80x50mm' | '78x100mm';
+export type TicketPaperWidth =
+  | '58mm'
+  | '80mm'
+  | '50x30mm'
+  | '50x40mm'
+  | '57x40mm'
+  | '60x40mm'
+  | '70x20mm'
+  | '76x100mm'
+  | '78x100mm'
+  | '76x130mm'
+  | '100x100mm'
+  | '100x150mm'
+  | '100x180mm'
+  | '100x200mm'
+  | '210x300mm'
+  | '80x50mm';
 export type TicketAlign = 'center' | 'left' | 'right';
 
 export interface PrintSettings {

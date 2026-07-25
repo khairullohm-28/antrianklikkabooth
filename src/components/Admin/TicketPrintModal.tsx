@@ -2,6 +2,7 @@ import React from 'react';
 import { useQueue } from '../../context/QueueContext';
 import { TicketReceiptView } from './TicketReceiptView';
 import { Printer, X, Share2 } from 'lucide-react';
+import { getPaperDimensionSpec } from '../../utils/paperDimensions';
 
 export const TicketPrintModal: React.FC = () => {
   const {
@@ -18,6 +19,8 @@ export const TicketPrintModal: React.FC = () => {
   const [copied, setCopied] = React.useState(false);
 
   if (!isPrintModalOpen || !activeTicketToPrint) return null;
+
+  const spec = getPaperDimensionSpec(printSettings.paperWidth);
 
   // Calculate estimated wait time for this ticket
   const booth = booths.find((b) => b.id === activeTicketToPrint.boothId);
@@ -36,7 +39,6 @@ export const TicketPrintModal: React.FC = () => {
 
   const handlePrint = () => {
     setIsPrinting(true);
-    // Use requestAnimationFrame + setTimeout to yield main thread and allow UI repaint before print dialog blocks main thread
     requestAnimationFrame(() => {
       setTimeout(() => {
         try {
@@ -124,9 +126,20 @@ export const TicketPrintModal: React.FC = () => {
         </div>
       </div>
 
-      {/* Print CSS Injection */}
+      {/* Dynamic Thermal Label Print CSS Injection */}
       <style>{`
         @media print {
+          @page {
+            size: ${spec.pageSizeCss};
+            margin: 0;
+          }
+          html, body {
+            margin: 0 !important;
+            padding: 0 !important;
+            background: white !important;
+            width: ${spec.widthMm}mm !important;
+            ${spec.heightMm ? `height: ${spec.heightMm}mm !important;` : ''}
+          }
           body * {
             visibility: hidden;
           }
@@ -134,12 +147,19 @@ export const TicketPrintModal: React.FC = () => {
             visibility: visible;
           }
           #printable-thermal-ticket {
-            position: absolute;
-            left: 0;
-            top: 0;
-            width: 100% !important;
+            position: absolute !important;
+            left: 0 !important;
+            top: 0 !important;
+            width: ${spec.widthMm}mm !important;
+            ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : 'height: auto !important;'}
+            padding: ${spec.printPaddingCss} !important;
+            margin: 0 auto !important;
             box-shadow: none !important;
             border: none !important;
+            overflow: hidden !important;
+            box-sizing: border-box !important;
+            page-break-after: avoid !important;
+            page-break-inside: avoid !important;
           }
         }
       `}</style>
