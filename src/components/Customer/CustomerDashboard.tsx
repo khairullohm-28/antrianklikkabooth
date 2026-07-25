@@ -59,17 +59,18 @@ export const CustomerDashboard: React.FC = () => {
       } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
         const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
         const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || booths[0];
-        const virtualTicket = {
-          id: `virtual-${cleanNo}`,
+        // For completed or cleared ticket links, set completed status so it doesn't cause broken calculations or server errors
+        const expiredTicket = {
+          id: `expired-${cleanNo}`,
           boothId: matchedBooth ? matchedBooth.id : 'b1',
           boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
           boothCode: matchedBooth ? matchedBooth.code : boothCode,
           ticketNumber: cleanNo,
-          sequence: 999,
-          status: 'waiting' as const,
+          sequence: 0,
+          status: 'completed' as const,
           createdAt: new Date().toISOString(),
         };
-        setSelectedTicketForCustomer(virtualTicket);
+        setSelectedTicketForCustomer(expiredTicket);
       }
     }
   }, [tickets, booths, selectedTicketForCustomer, setSelectedTicketForCustomer]);
@@ -190,6 +191,13 @@ export const CustomerDashboard: React.FC = () => {
     setSelectedTicketForCustomer(null);
     setInputTicket('');
     setHasCelebrated(false);
+    try {
+      if (typeof window !== 'undefined' && window.history) {
+        window.history.replaceState({}, '', window.location.pathname);
+      }
+    } catch (err) {
+      console.error(err);
+    }
   };
 
   return (
@@ -274,12 +282,22 @@ export const CustomerDashboard: React.FC = () => {
             </div>
 
             {/* Status Statistics */}
-            {currentCustomerTicket.status === 'completed' ? (
-              <div className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-1">
-                <p className="font-black text-emerald-900 text-sm">Sesi Foto Anda Selesai</p>
-                <p className="text-xs text-emerald-700 font-medium">
-                  Terima kasih telah mengabadikan momen bersama kami!
-                </p>
+            {currentCustomerTicket.status === 'completed' || currentCustomerTicket.status === 'cancelled' ? (
+              <div className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
+                <div>
+                  <p className="font-black text-emerald-900 text-sm">Sesi Foto / Tiket Ini Telah Selesai</p>
+                  <p className="text-xs text-emerald-700 font-medium mt-0.5">
+                    Terima kasih telah mengabadikan momen bersama kami!
+                  </p>
+                </div>
+                <button
+                  type="button"
+                  onClick={handleResetTicket}
+                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md active:scale-95 inline-flex items-center gap-1.5"
+                >
+                  <RefreshCw className="w-3.5 h-3.5 text-red-400" />
+                  <span>Cari / Scan Tiket Lain</span>
+                </button>
               </div>
             ) : (
               <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-center bg-slate-50 p-4 rounded-2xl border border-slate-200/80">

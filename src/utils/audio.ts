@@ -3,6 +3,26 @@
  * Uses Web Audio API for chime bells and Web Speech API for Indonesian voice call.
  */
 
+// Global reference to prevent garbage collection of SpeechSynthesisUtterance while speaking
+let activeUtterance: SpeechSynthesisUtterance | null = null;
+let cachedVoices: SpeechSynthesisVoice[] = [];
+
+// Initialize & cache voices when available
+if (typeof window !== 'undefined' && 'speechSynthesis' in window && window.speechSynthesis) {
+  try {
+    cachedVoices = window.speechSynthesis.getVoices();
+    window.speechSynthesis.onvoiceschanged = () => {
+      try {
+        cachedVoices = window.speechSynthesis.getVoices();
+      } catch {
+        // ignore
+      }
+    };
+  } catch {
+    // ignore
+  }
+}
+
 export function playChimeSound() {
   try {
     if (typeof window === 'undefined') return;
@@ -63,6 +83,11 @@ export function announceQueueVoice(ticketNumber: string, boothName: string) {
       return;
     }
 
+    // Ensure audio/speech context is resumed if paused by browser
+    if (window.speechSynthesis.paused) {
+      window.speechSynthesis.resume();
+    }
+
     // Format ticket code e.g. "VIN001" -> "V I N, 0 0 1"
     const formattedTicket = ticketNumber
       .replace(/([A-Za-z]+)(\d+)/, '$1 $2')
@@ -76,14 +101,28 @@ export function announceQueueVoice(ticketNumber: string, boothName: string) {
       try {
         if (!('speechSynthesis' in window) || !window.speechSynthesis) return;
 
-        window.speechSynthesis.cancel(); // Clear any queued speech
+        // Cancel previous speech safely
+        try {
+          window.speechSynthesis.cancel();
+          if (window.speechSynthesis.paused) {
+            window.speechSynthesis.resume();
+          }
+        } catch {
+          // ignore
+        }
 
-        const utterance = new SpeechSynthesisUtterance(speechText);
-        utterance.lang = 'id-ID';
-        utterance.rate = 0.88; // Natural clear Indonesian cadence
-        utterance.pitch = 1.0;
+        // Store in global variable to prevent Garbage Collection during playback
+        activeUtterance = new SpeechSynthesisUtterance(speechText);
+        activeUtterance.lang = 'id-ID';
+        activeUtterance.rate = 0.88; // Natural clear Indonesian cadence
+        activeUtterance.pitch = 1.0;
 
-        utterance.onerror = (e) => {
+        activeUtterance.onend = () => {
+          activeUtterance = null;
+        };
+
+        activeUtterance.onerror = (e) => {
+          activeUtterance = null;
           if (e.error !== 'canceled' && e.error !== 'interrupted') {
             console.warn('Speech synthesis utterance info:', e.error || e);
           }
@@ -91,24 +130,25 @@ export function announceQueueVoice(ticketNumber: string, boothName: string) {
 
         // Select Indonesian voice if available
         try {
-          const voices = window.speechSynthesis.getVoices();
+          const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
           if (Array.isArray(voices) && voices.length > 0) {
             const idVoice = voices.find((v) => v.lang && (v.lang.startsWith('id') || v.lang.includes('ID')));
             if (idVoice) {
-              utterance.voice = idVoice;
+              activeUtterance.voice = idVoice;
             }
           }
         } catch {
           // ignore voice selection failure
         }
 
-        window.speechSynthesis.speak(utterance);
+        window.speechSynthesis.speak(activeUtterance);
       } catch (err) {
         console.warn('Speech synthesis inner error:', err);
       }
-    }, 850);
+    }, 700);
   } catch (err) {
     console.warn('announceQueueVoice error:', err);
   }
 }
+
 
