@@ -79,7 +79,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const [printSettings, setPrintSettings] = useState<PrintSettings>(() => {
     try {
       const saved = localStorage.getItem(LOCAL_STORAGE_KEY_PRINT);
-      return saved ? JSON.parse(saved) : DEFAULT_PRINT_SETTINGS;
+      return saved ? { ...DEFAULT_PRINT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_PRINT_SETTINGS;
     } catch {
       return DEFAULT_PRINT_SETTINGS;
     }
@@ -265,7 +265,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
                 if (!prevLast || prevLast.id !== latestCalled.id || prevLast.calledAt !== latestCalled.calledAt) {
                   localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(latestCalled));
                   if (soundEnabled) {
-                    announceQueueVoice(latestCalled.ticketNumber, latestCalled.boothName);
+                    announceQueueVoice(latestCalled.ticketNumber, latestCalled.boothName, {
+                      voiceName: printSettings.speechVoiceName,
+                      rate: printSettings.speechRate,
+                      pitch: printSettings.speechPitch,
+                    });
                   }
                   return latestCalled;
                 }
@@ -494,8 +498,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               try { localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(data.tickets)); } catch {}
             }
             if (data.printSettings) {
-              setPrintSettings(data.printSettings);
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(data.printSettings)); } catch {}
+              const mergedPrint = { ...DEFAULT_PRINT_SETTINGS, ...data.printSettings };
+              setPrintSettings(mergedPrint);
+              try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(mergedPrint)); } catch {}
             }
             if (data.appsScriptConfig) {
               setAppsScriptConfig(data.appsScriptConfig);
@@ -702,7 +707,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       // Play sound
       if (soundEnabled) {
-        announceQueueVoice(ticketToCall.ticketNumber, booth.name);
+        announceQueueVoice(ticketToCall.ticketNumber, booth.name, {
+          voiceName: printSettings.speechVoiceName,
+          rate: printSettings.speechRate,
+          pitch: printSettings.speechPitch,
+        });
       }
 
       if (broadcastChannel) {
@@ -788,7 +797,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       });
 
       if (soundEnabled) {
-        announceQueueVoice(ticket.ticketNumber, ticket.boothName);
+        announceQueueVoice(ticket.ticketNumber, ticket.boothName, {
+          voiceName: printSettings.speechVoiceName,
+          rate: printSettings.speechRate,
+          pitch: printSettings.speechPitch,
+        });
       }
 
       const updatedLogs = addLog(

@@ -63,21 +63,21 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
     }
   };
 
-  // Generate Divider Line (spans 100% edge-to-edge)
+  // Generate Divider Line (proportional to ticket width)
   const renderDivider = () => {
     const style = settings.dividerStyle || 'dashed';
 
     if (style === 'dashed') {
-      return <div className="w-full my-1 border-t border-dashed border-black opacity-80" />;
+      return <div className="w-[92%] mx-auto my-1 border-t border-dashed border-black opacity-80" />;
     }
     if (style === 'double') {
-      return <div className="w-full my-1 border-t-2 border-double border-black opacity-80" />;
+      return <div className="w-[92%] mx-auto my-1 border-t-2 border-double border-black opacity-80" />;
     }
     if (style === 'dotted') {
-      return <div className="w-full my-1 border-t border-dotted border-black opacity-80" />;
+      return <div className="w-[92%] mx-auto my-1 border-t border-dotted border-black opacity-80" />;
     }
     if (style === 'solid') {
-      return <div className="w-full my-1 border-t border-solid border-black opacity-80" />;
+      return <div className="w-[92%] mx-auto my-1 border-t border-solid border-black opacity-80" />;
     }
 
     let pattern = '*';
@@ -85,10 +85,12 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
     else if (style === 'diamonds') pattern = '◆◇';
     else if (style === 'custom') pattern = settings.dividerText || '-';
 
-    const repeated = pattern.repeat(60);
+    const maxChars = Math.max(12, Math.floor((spec.widthMm || 58) / 2.2));
+    const repeatCount = Math.max(1, Math.floor(maxChars / (pattern.length || 1)));
+    const repeated = pattern.repeat(repeatCount);
 
     return (
-      <div className="w-full text-black text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-80 text-center">
+      <div className="w-[92%] mx-auto text-black text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-80 text-center">
         {repeated}
       </div>
     );
@@ -213,7 +215,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
         )}
 
         {/* ESTIMATED WAIT TIME */}
-        {(settings.showEstimatedWait ?? true) && estimatedWaitMinutes !== undefined && !spec.isMicroHeight && (
+        {settings.showEstimatedWait !== false && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
           <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
             Estimasi: ~{estimatedWaitMinutes} mnt
           </div>

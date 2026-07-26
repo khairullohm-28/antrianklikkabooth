@@ -68,6 +68,10 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   monitorLogoUrl: '',
   monitorBrandTitle: 'LAYAR ANTRIAN PHOTOBOOTH',
   monitorWelcomeText: '📸 Selamat Datang di Klikka Photobooth! Silakan bersantai & perhatikan panggilan nomor antrian Anda di layar. Selamat mengabadikan momen seru! ✨',
+
+  speechVoiceName: '',
+  speechRate: 0.88,
+  speechPitch: 1.0,
 };
 
 export interface TicketLayoutTemplate {

@@ -391,9 +391,9 @@ export const getPaperDimensionSpec = (
   } else {
     // For continuous roll paper (58mm, 80mm)
     if (orientation === 'landscape') {
-      spec.pageSizeCss = `${spec.widthMm}mm landscape`;
+      spec.pageSizeCss = `${spec.widthMm}mm auto landscape`;
     } else {
-      spec.pageSizeCss = `${spec.widthMm}mm portrait`;
+      spec.pageSizeCss = `${spec.widthMm}mm auto portrait`;
     }
   }
 

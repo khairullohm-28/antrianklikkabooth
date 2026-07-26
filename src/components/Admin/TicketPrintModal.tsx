@@ -137,9 +137,9 @@ export const TicketPrintModal: React.FC = () => {
             margin: 0 !important;
             padding: 0 !important;
             background: #ffffff !important;
-            width: 100% !important;
-            height: 100% !important;
-            overflow: visible !important;
+            width: ${spec.widthMm}mm !important;
+            height: auto !important;
+            overflow: hidden !important;
           }
           body * {
             visibility: hidden !important;
@@ -152,8 +152,7 @@ export const TicketPrintModal: React.FC = () => {
             top: 0 !important;
             left: 0 !important;
             width: 100% !important;
-            max-width: 100% !important;
-            min-width: 100% !important;
+            max-width: ${spec.widthMm}mm !important;
             ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : 'height: auto !important;'}
             padding: ${spec.printPaddingCss} !important;
             margin: 0 !important;
@@ -163,6 +162,8 @@ export const TicketPrintModal: React.FC = () => {
             page-break-after: avoid !important;
             page-break-before: avoid !important;
             page-break-inside: avoid !important;
+            break-after: avoid !important;
+            break-inside: avoid !important;
             background: #ffffff !important;
             color: #000000 !important;
           }

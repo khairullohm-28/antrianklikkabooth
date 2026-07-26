@@ -76,12 +76,36 @@ export function playDoubleChimeSound() {
   }, 500);
 }
 
+export function getAvailableVoices(): SpeechSynthesisVoice[] {
+  if (typeof window === 'undefined' || !('speechSynthesis' in window)) return [];
+  try {
+    const voices = window.speechSynthesis.getVoices();
+    if (voices && voices.length > 0) {
+      cachedVoices = voices;
+      return voices;
+    }
+  } catch {
+    // ignore
+  }
+  return cachedVoices;
+}
+
+export interface VoiceAnnounceOptions {
+  voiceName?: string;
+  rate?: number;
+  pitch?: number;
+}
+
 /**
  * Announces ticket number and booth name in Indonesian speech.
  * Sequence: Play chime first -> wait for chime tone decay -> speak Indonesian speech synthesis.
  * Uses deduplication to prevent rapid duplicate calls from interrupting ongoing speech.
  */
-export function announceQueueVoice(ticketNumber: string, boothName: string): Promise<void> {
+export function announceQueueVoice(
+  ticketNumber: string,
+  boothName: string,
+  options?: VoiceAnnounceOptions
+): Promise<void> {
   return new Promise((resolve) => {
     try {
       if (typeof window === 'undefined') {
@@ -89,8 +113,13 @@ export function announceQueueVoice(ticketNumber: string, boothName: string): Pro
         return;
       }
 
-      const cleanTicket = ticketNumber.trim().toUpperCase();
-      const cleanBooth = boothName.trim();
+      const cleanTicket = (ticketNumber || '').toString().trim().toUpperCase();
+      const cleanBooth = (boothName || '').toString().trim();
+      if (!cleanTicket) {
+        resolve();
+        return;
+      }
+
       const announceKey = `${cleanTicket}_${cleanBooth}`;
       const now = Date.now();
 
@@ -153,8 +182,8 @@ export function announceQueueVoice(ticketNumber: string, boothName: string): Pro
           // Create utterance and keep global reference to prevent GC from terminating speech mid-sentence
           activeUtterance = new SpeechSynthesisUtterance(speechText);
           activeUtterance.lang = 'id-ID';
-          activeUtterance.rate = 0.88; // Clear natural Indonesian cadence
-          activeUtterance.pitch = 1.0;
+          activeUtterance.rate = options?.rate || 0.88; // Clear natural Indonesian cadence
+          activeUtterance.pitch = options?.pitch || 1.0;
 
           activeUtterance.onend = () => {
             activeUtterance = null;
@@ -169,13 +198,25 @@ export function announceQueueVoice(ticketNumber: string, boothName: string): Pro
             resolve();
           };
 
-          // Select Indonesian voice if available in cache or system
+          // Select requested or best available voice
           try {
-            const voices = cachedVoices.length > 0 ? cachedVoices : window.speechSynthesis.getVoices();
+            const voices = getAvailableVoices();
             if (Array.isArray(voices) && voices.length > 0) {
-              const idVoice = voices.find((v) => v.lang && (v.lang.startsWith('id') || v.lang.includes('ID')));
-              if (idVoice) {
-                activeUtterance.voice = idVoice;
+              let matchedVoice: SpeechSynthesisVoice | undefined;
+
+              if (options?.voiceName) {
+                matchedVoice = voices.find((v) => v.name === options.voiceName);
+              }
+
+              if (!matchedVoice) {
+                // Preferred Indonesian voices
+                matchedVoice = voices.find(
+                  (v) => v.lang && (v.lang.startsWith('id') || v.lang.includes('ID') || v.lang.includes('id_ID'))
+                );
+              }
+
+              if (matchedVoice) {
+                activeUtterance.voice = matchedVoice;
               }
             }
           } catch {

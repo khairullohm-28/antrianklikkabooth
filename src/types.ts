@@ -94,6 +94,11 @@ export interface PrintSettings {
   monitorLogoUrl?: string;
   monitorBrandTitle?: string;
   monitorWelcomeText?: string;
+
+  // Voice & Speech Synthesis Settings
+  speechVoiceName?: string;
+  speechRate?: number;
+  speechPitch?: number;
 }
 
 export type ActivityAction =
