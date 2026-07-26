@@ -852,6 +852,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
                             }
                             className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500"
                           >
+                            <option value="none">Tanpa Bingkai (Borderless - Rekomendasi Thermal)</option>
                             <option value="rounded">Kartu Membulat (Rounded Card)</option>
                             <option value="standard">Persegi Panjang Standard</option>
                             <option value="tear-off">Tepi Gerigi Sobek (Sawtooth Receipt)</option>

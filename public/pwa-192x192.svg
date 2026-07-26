@@ -1,0 +1,11 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <rect width="192" height="192" rx="42" fill="#0f172a"/>
+  <!-- Camera / Photobooth Icon -->
+  <path d="M60 60h-9c-5 0-9 4-9 9v60c0 5 4 9 9 9h90c5 0 9-4 9-9V69c0-5-4-9-9-9h-9l-6-12H66l-6 12z" fill="#ef4444"/>
+  <circle cx="96" cy="99" r="21" fill="#ffffff"/>
+  <circle cx="96" cy="99" r="13" fill="#0f172a"/>
+  <circle cx="126" cy="72" r="4.5" fill="#f87171"/>
+  <!-- Queue Badge -->
+  <rect x="112" y="116" width="46" height="18" rx="5" fill="#22c55e"/>
+  <text x="135" y="129" font-family="system-ui, sans-serif" font-weight="900" font-size="9" fill="#ffffff" text-anchor="middle">A001</text>
+</svg>

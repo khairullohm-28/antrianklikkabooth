@@ -4,6 +4,7 @@ import { AdminLogin } from './AdminLogin';
 import { SettingsModal } from './SettingsModal';
 import { TicketPrintModal } from './TicketPrintModal';
 import { AdminSidebar } from './AdminSidebar';
+import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
 import { Booth } from '../../types';
 
 // Views
@@ -117,13 +118,16 @@ export const AdminDashboard: React.FC = () => {
           </div>
         </div>
 
-        <button
-          onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
-          className="p-2 bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition-colors"
-          aria-label="Toggle Menu"
-        >
-          {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
-        </button>
+        <div className="flex items-center gap-2">
+          <ConnectionStatusBadge showText={true} />
+          <button
+            onClick={() => setIsMobileSidebarOpen(!isMobileSidebarOpen)}
+            className="p-2 bg-slate-800 text-slate-200 rounded-xl hover:bg-slate-700 transition-colors"
+            aria-label="Toggle Menu"
+          >
+            {isMobileSidebarOpen ? <X className="w-6 h-6" /> : <Menu className="w-6 h-6" />}
+          </button>
+        </div>
       </div>
 
       {/* COLLAPSIBLE SIDEBAR COMPONENT */}

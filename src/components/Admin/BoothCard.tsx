@@ -9,13 +9,13 @@ interface BoothCardProps {
 }
 
 export const BoothCard: React.FC<BoothCardProps> = ({ booth }) => {
-  const { tickets, callNext, printTicket, recallTicket, completeTicket, deleteTicket } = useQueue();
+  const { tickets, lastCalledTicket, callNext, printTicket, recallTicket, completeTicket, deleteTicket } = useQueue();
   const [selectedTicketToManage, setSelectedTicketToManage] = useState<Ticket | null>(null);
 
   // Find current active called ticket for this booth
-  const currentTicket = tickets.find(
-    (t) => t.boothId === booth.id && t.status === 'called'
-  );
+  const currentTicket =
+    tickets.find((t) => t.boothId === booth.id && (t.status === 'called' || (t.status as string) === 'serving')) ||
+    (lastCalledTicket && lastCalledTicket.boothId === booth.id ? lastCalledTicket : null);
 
   // Find waiting queue for this booth
   const waitingTickets = tickets

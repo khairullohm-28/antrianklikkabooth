@@ -13,6 +13,7 @@ import {
   ChevronRight,
 } from 'lucide-react';
 import { AdminTab } from './AdminDashboard';
+import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
 
 interface AdminSidebarProps {
   activeTab: AdminTab;
@@ -103,13 +104,13 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               </div>
             )}
             {!isSidebarCollapsed && (
-              <div className="truncate">
+              <div className="truncate space-y-0.5">
                 <h2 className="font-black text-xs tracking-tight text-white leading-tight truncate">
                   Studio Admin
                 </h2>
-                <span className="inline-flex items-center gap-1 text-[9px] font-extrabold text-emerald-400">
-                  <ShieldCheck className="w-2.5 h-2.5" /> Online
-                </span>
+                <div className="pt-0.5">
+                  <ConnectionStatusBadge showText={true} />
+                </div>
               </div>
             )}
           </div>

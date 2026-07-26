@@ -1,6 +1,17 @@
 import { initializeApp } from 'firebase/app';
 import { getAuth, signInAnonymously } from 'firebase/auth';
-import { getFirestore, doc, collection, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc, setLogLevel } from 'firebase/firestore';
+import {
+  getFirestore,
+  enableIndexedDbPersistence,
+  doc,
+  collection,
+  onSnapshot,
+  setDoc,
+  getDoc,
+  updateDoc,
+  deleteDoc,
+  setLogLevel
+} from 'firebase/firestore';
 import firebaseConfig from '../firebase-applet-config.json';
 
 const app = initializeApp(firebaseConfig);
@@ -13,6 +24,17 @@ export const db =
   firebaseConfig.firestoreDatabaseId && firebaseConfig.firestoreDatabaseId !== '(default)'
     ? getFirestore(app, firebaseConfig.firestoreDatabaseId)
     : getFirestore(app);
+
+// Enable Firestore offline persistence
+enableIndexedDbPersistence(db).catch((err) => {
+  if (err?.code === 'failed-precondition') {
+    console.info('Firestore offline persistence failed-precondition: multiple tabs open');
+  } else if (err?.code === 'unimplemented') {
+    console.info('Firestore offline persistence is not supported by this browser');
+  } else {
+    console.debug('Firestore offline persistence notice:', err?.message || err);
+  }
+});
 
 // Attempt anonymous sign-in gracefully if enabled on the Firebase console
 signInAnonymously(auth).catch((err) => {

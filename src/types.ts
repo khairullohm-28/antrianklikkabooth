@@ -28,7 +28,7 @@ export interface Ticket {
 
 export type TicketFontFamily = 'monospace' | 'sans-serif' | 'serif' | 'display';
 export type TicketDividerStyle = 'dashed' | 'double' | 'dotted' | 'solid' | 'stars' | 'diamonds' | 'custom';
-export type TicketLabelShape = 'standard' | 'rounded' | 'tear-off' | 'bordered';
+export type TicketLabelShape = 'standard' | 'rounded' | 'tear-off' | 'bordered' | 'none' | 'borderless';
 export type TicketDateFormat = 'DD/MM/YYYY, HH:mm' | 'YYYY-MM-DD HH:mm' | 'DD MMM YYYY, HH:mm' | 'MM/DD/YYYY hh:mm A' | 'HH:mm (Time Only)';
 export type TicketPaperWidth =
   | '58mm'

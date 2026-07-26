@@ -152,45 +152,48 @@ export const TicketPrintModal: React.FC = () => {
                   padding: 0 !important;
                   background: #ffffff !important;
                   width: 100% !important;
-                  height: 100% !important;
-                  overflow: hidden !important;
+                  height: auto !important;
+                  min-height: 100% !important;
+                  overflow: visible !important;
+                  display: flex !important;
+                  justify-content: center !important;
+                  align-items: flex-start !important;
                 }
                 body > *:not(#thermal-print-portal) {
                   display: none !important;
                 }
                 #thermal-print-portal {
-                  display: block !important;
-                  position: absolute !important;
-                  top: 0 !important;
-                  left: 0 !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  align-items: center !important;
+                  justify-content: flex-start !important;
+                  position: relative !important;
                   width: 100% !important;
-                  max-width: ${spec.widthMm}mm !important;
-                  ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : ''}
+                  max-width: ${spec.widthMm ? `${spec.widthMm}mm` : '100%'} !important;
                   margin: 0 auto !important;
                   padding: 0 !important;
                   background: #ffffff !important;
-                  overflow: hidden !important;
-                  page-break-after: avoid !important;
-                  page-break-before: avoid !important;
+                  overflow: visible !important;
+                  box-sizing: border-box !important;
                   page-break-inside: avoid !important;
-                  break-after: avoid !important;
                   break-inside: avoid !important;
                 }
                 #printable-thermal-ticket {
                   width: 100% !important;
                   max-width: 100% !important;
-                  ${spec.heightMm ? `height: 100% !important; max-height: 100% !important;` : ''}
+                  height: auto !important;
                   margin: 0 auto !important;
                   padding: ${spec.printPaddingCss} !important;
                   box-sizing: border-box !important;
                   background: #ffffff !important;
                   color: #000000 !important;
-                  page-break-after: avoid !important;
-                  page-break-before: avoid !important;
+                  border: none !important;
+                  border-radius: 0 !important;
+                  box-shadow: none !important;
+                  overflow: visible !important;
+                  text-align: center !important;
                   page-break-inside: avoid !important;
-                  break-after: avoid !important;
                   break-inside: avoid !important;
-                  overflow: hidden !important;
                 }
               }
             `}</style>

@@ -1,0 +1,12 @@
+<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 512 512" width="512" height="512">
+  <rect width="512" height="512" rx="112" fill="#0f172a"/>
+  <rect x="32" y="32" width="448" height="448" rx="80" fill="none" stroke="#e2e8f0" stroke-opacity="0.1" stroke-width="8"/>
+  <!-- Camera / Photobooth Icon -->
+  <path d="M160 160h-24c-13.25 0-24 10.75-24 24v160c0 13.25 10.75 24 24 24h240c13.25 0 24-10.75 24-24V184c0-13.25-10.75-24-24-24h-24l-16-32h-128l-16 32z" fill="#ef4444"/>
+  <circle cx="256" cy="264" r="56" fill="#ffffff"/>
+  <circle cx="256" cy="264" r="36" fill="#0f172a"/>
+  <circle cx="336" cy="192" r="12" fill="#f87171"/>
+  <!-- Queue Badge -->
+  <rect x="300" y="310" width="120" height="48" rx="12" fill="#22c55e"/>
+  <text x="360" y="342" font-family="system-ui, sans-serif" font-weight="900" font-size="24" fill="#ffffff" text-anchor="middle">A001</text>
+</svg>

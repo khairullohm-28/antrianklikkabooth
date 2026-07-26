@@ -127,13 +127,16 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
 
   // Label Shape Container Classes
   const getShapeClass = () => {
+    if (isPrintMode || settings.labelShape === 'none' || settings.labelShape === 'borderless') {
+      return 'border-none shadow-none rounded-none';
+    }
     switch (settings.labelShape) {
       case 'rounded':
         return 'rounded-xl border border-slate-300 shadow-sm';
       case 'bordered':
         return 'border-2 border-slate-900 rounded-lg shadow-sm';
       case 'tear-off':
-        return 'border-x border-slate-300 relative before:content-[""] before:block before:h-2 before:bg-[radial-gradient(circle,_transparent_4px,_white_4px)] before:bg-[length:12px_12px] after:content-[""] after:block after:h-2 after:bg-[radial-gradient(circle,_transparent_4px,_white_4px)] after:bg-[length:12px_12px]';
+        return 'border-x border-slate-300 relative';
       case 'standard':
       default:
         return 'border border-slate-300 rounded-md shadow-sm';
@@ -153,120 +156,199 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   const logoWidth = Math.min(settings.logoWidth || spec.logoMaxPx, spec.logoMaxPx * 1.5);
   const qrSize = Math.min(settings.qrSize || spec.qrSizePx, spec.qrSizePx * 1.4);
 
+  const isLandscape = spec.orientation === 'landscape';
+
   return (
     <div
       id={id}
-      className={`bg-white text-slate-900 ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-between transition-all overflow-hidden box-border`}
+      className={`bg-white text-slate-900 ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-start transition-all box-border`}
       style={{
         width: isPrintMode ? '100%' : spec.widthPx,
-        height: isPrintMode ? (spec.heightMm ? '100%' : 'auto') : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
+        height: isPrintMode ? 'auto' : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
         minHeight: isPrintMode ? 'auto' : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
-        maxHeight: isPrintMode ? '100%' : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
+        maxHeight: isPrintMode ? 'none' : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
       }}
     >
-      <div className="w-full flex flex-col items-center justify-center space-y-0.5">
-        {/* 1. LOGO */}
-        {settings.logoUrl && (
-          <img
-            src={settings.logoUrl}
-            alt="Photobooth Logo"
-            className="object-contain my-0.5 rounded"
-            style={{ width: `${logoWidth}px`, maxHeight: `${logoWidth}px` }}
-            onError={(e) => {
-              (e.target as HTMLElement).style.display = 'none';
-            }}
-          />
-        )}
-
-        {/* 2. HEADER TITLE */}
-        {settings.headerTitle && (
-          <h2 className={`${spec.headerTitleClass} text-black leading-tight max-w-full px-1`}>
-            {settings.headerTitle}
-          </h2>
-        )}
-
-        {/* SUB-HEADER TITLE */}
-        {settings.subHeaderTitle && (
-          <p className={`${spec.subHeaderClass} text-black font-medium tracking-tight max-w-full px-1`}>
-            {settings.subHeaderTitle}
-          </p>
-        )}
-
-        {/* 3. BRANCH NAME */}
-        {(settings.showBranchName ?? true) && settings.branchName && (
-          <p className={`${spec.textDetailClass} text-black font-sans max-w-full px-1 leading-snug`}>
-            {settings.branchName}
-          </p>
-        )}
-
-        {!spec.isMicroHeight && renderDivider()}
-
-        {/* 4. TICKET NUMBER */}
-        {(settings.showTicketNumber ?? true) && (
-          <div className={`${spec.ticketNumberClass} text-black font-mono tracking-tight my-0.5`}>
-            {ticket.ticketNumber}
-          </div>
-        )}
-
-        {/* 5. BOOTH NAME */}
-        {(settings.showBoothName ?? true) && (
-          <div className={`${spec.textDetailClass} font-extrabold uppercase tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-black max-w-full truncate`}>
-            {ticket.boothName}
-          </div>
-        )}
-
-        {/* ESTIMATED WAIT TIME */}
-        {settings.showEstimatedWait === true && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
-          <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
-            Estimasi: ~{estimatedWaitMinutes} mnt
-          </div>
-        )}
-
-        {/* 6. DATE & TIME */}
-        {(settings.showDateTime ?? true) && (
-          <div className={`${spec.textDetailClass} text-black my-0.5 font-mono`}>
-            {formatDateTime()}
-          </div>
-        )}
-
-        {!spec.isMicroHeight && renderDivider()}
-
-        {/* 7. QR CODE & SUBTEXTS */}
-        {settings.showQR && (
-          <div className="flex flex-col items-center my-0.5 w-full">
-            {settings.qrSubText1 && !spec.isMicroHeight && (
-              <p className={`${spec.footerClass} font-sans font-medium text-black leading-tight px-1`}>
-                {settings.qrSubText1}
+      {isLandscape ? (
+        /* LANDSCAPE 2-COLUMN BALANCED LAYOUT */
+        <div className="w-full flex flex-row items-center justify-between gap-2 text-center my-auto">
+          {/* LEFT COLUMN: Header, Logo, Number, Booth */}
+          <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pr-1 border-r border-dashed border-black/50">
+            {settings.logoUrl && (
+              <img
+                src={settings.logoUrl}
+                alt="Photobooth Logo"
+                className="object-contain my-0.5 rounded"
+                style={{ width: `${logoWidth}px`, maxHeight: `${logoWidth}px` }}
+                onError={(e) => {
+                  (e.target as HTMLElement).style.display = 'none';
+                }}
+              />
+            )}
+            {settings.headerTitle && (
+              <h2 className={`${spec.headerTitleClass} text-black leading-tight max-w-full px-1`}>
+                {settings.headerTitle}
+              </h2>
+            )}
+            {settings.subHeaderTitle && (
+              <p className={`${spec.subHeaderClass} text-black font-medium tracking-tight max-w-full px-1`}>
+                {settings.subHeaderTitle}
               </p>
             )}
-            {settings.qrSubText2 && !spec.isMicroHeight && (
-              <p className={`${spec.footerClass} font-sans font-bold text-black leading-tight px-1 mb-0.5`}>
-                {settings.qrSubText2}
+            {(settings.showBranchName ?? true) && settings.branchName && (
+              <p className={`${spec.textDetailClass} text-black font-sans max-w-full px-1 leading-snug`}>
+                {settings.branchName}
               </p>
             )}
+            {(settings.showTicketNumber ?? true) && (
+              <div className={`${spec.ticketNumberClass} text-black font-mono tracking-tight my-0.5`}>
+                {ticket.ticketNumber}
+              </div>
+            )}
+            {(settings.showBoothName ?? true) && (
+              <div className={`${spec.textDetailClass} font-extrabold uppercase tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-black max-w-full truncate`}>
+                {ticket.boothName}
+              </div>
+            )}
+            {(settings.showDateTime ?? true) && (
+              <div className={`${spec.textDetailClass} text-black my-0.5 font-mono`}>
+                {formatDateTime()}
+              </div>
+            )}
+          </div>
 
-            <div className="p-1 bg-white border border-black rounded-md flex items-center justify-center">
-              <QRCodeSVG value={customerQrUrl} size={qrSize} level="M" />
+          {/* RIGHT COLUMN: QR, Notes & Footer */}
+          <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pl-1">
+            {settings.showQR && (
+              <div className="flex flex-col items-center my-0.5 w-full">
+                {settings.qrSubText1 && !spec.isMicroHeight && (
+                  <p className={`${spec.footerClass} font-sans font-medium text-black leading-tight px-1`}>
+                    {settings.qrSubText1}
+                  </p>
+                )}
+                <div className="p-1 bg-white border border-black rounded-md flex items-center justify-center my-1">
+                  <QRCodeSVG value={customerQrUrl} size={qrSize} level="M" />
+                </div>
+              </div>
+            )}
+            {settings.customNote && !spec.isMicroHeight && (
+              <p className={`${spec.footerClass} font-sans font-semibold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
+                "{settings.customNote}"
+              </p>
+            )}
+            {settings.footerText && !spec.isMicroHeight && (
+              <p className={`${spec.footerClass} font-sans text-black leading-tight max-w-full px-1`}>
+                {settings.footerText}
+              </p>
+            )}
+          </div>
+        </div>
+      ) : (
+        /* PORTRAIT VERTICAL STREAMLINED LAYOUT */
+        <div className="w-full flex flex-col items-center justify-center space-y-0.5">
+          {/* 1. LOGO */}
+          {settings.logoUrl && (
+            <img
+              src={settings.logoUrl}
+              alt="Photobooth Logo"
+              className="object-contain my-0.5 rounded"
+              style={{ width: `${logoWidth}px`, maxHeight: `${logoWidth}px` }}
+              onError={(e) => {
+                (e.target as HTMLElement).style.display = 'none';
+              }}
+            />
+          )}
+
+          {/* 2. HEADER TITLE */}
+          {settings.headerTitle && (
+            <h2 className={`${spec.headerTitleClass} text-black leading-tight max-w-full px-1`}>
+              {settings.headerTitle}
+            </h2>
+          )}
+
+          {/* SUB-HEADER TITLE */}
+          {settings.subHeaderTitle && (
+            <p className={`${spec.subHeaderClass} text-black font-medium tracking-tight max-w-full px-1`}>
+              {settings.subHeaderTitle}
+            </p>
+          )}
+
+          {/* 3. BRANCH NAME */}
+          {(settings.showBranchName ?? true) && settings.branchName && (
+            <p className={`${spec.textDetailClass} text-black font-sans max-w-full px-1 leading-snug`}>
+              {settings.branchName}
+            </p>
+          )}
+
+          {!spec.isMicroHeight && renderDivider()}
+
+          {/* 4. TICKET NUMBER */}
+          {(settings.showTicketNumber ?? true) && (
+            <div className={`${spec.ticketNumberClass} text-black font-mono tracking-tight my-0.5`}>
+              {ticket.ticketNumber}
             </div>
-          </div>
-        )}
+          )}
 
-        {/* 8. CUSTOM NOTE */}
-        {settings.customNote && !spec.isMicroHeight && (
-          <p className={`${spec.footerClass} font-sans font-semibold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
-            "{settings.customNote}"
-          </p>
-        )}
+          {/* 5. BOOTH NAME */}
+          {(settings.showBoothName ?? true) && (
+            <div className={`${spec.textDetailClass} font-extrabold uppercase tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-black max-w-full truncate`}>
+              {ticket.boothName}
+            </div>
+          )}
 
-        {settings.showQR && !spec.isMicroHeight && renderDivider()}
+          {/* ESTIMATED WAIT TIME */}
+          {settings.showEstimatedWait === true && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
+            <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
+              Estimasi: ~{estimatedWaitMinutes} mnt
+            </div>
+          )}
 
-        {/* 9. FOOTER TEXT */}
-        {settings.footerText && !spec.isMicroHeight && (
-          <p className={`${spec.footerClass} font-sans text-black leading-tight max-w-full px-1`}>
-            {settings.footerText}
-          </p>
-        )}
-      </div>
+          {/* 6. DATE & TIME */}
+          {(settings.showDateTime ?? true) && (
+            <div className={`${spec.textDetailClass} text-black my-0.5 font-mono`}>
+              {formatDateTime()}
+            </div>
+          )}
+
+          {!spec.isMicroHeight && renderDivider()}
+
+          {/* 7. QR CODE & SUBTEXTS */}
+          {settings.showQR && (
+            <div className="flex flex-col items-center my-0.5 w-full">
+              {settings.qrSubText1 && !spec.isMicroHeight && (
+                <p className={`${spec.footerClass} font-sans font-medium text-black leading-tight px-1`}>
+                  {settings.qrSubText1}
+                </p>
+              )}
+              {settings.qrSubText2 && !spec.isMicroHeight && (
+                <p className={`${spec.footerClass} font-sans font-bold text-black leading-tight px-1 mb-0.5`}>
+                  {settings.qrSubText2}
+                </p>
+              )}
+
+              <div className="p-1 bg-white border border-black rounded-md flex items-center justify-center">
+                <QRCodeSVG value={customerQrUrl} size={qrSize} level="M" />
+              </div>
+            </div>
+          )}
+
+          {/* 8. CUSTOM NOTE */}
+          {settings.customNote && !spec.isMicroHeight && (
+            <p className={`${spec.footerClass} font-sans font-semibold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
+              "{settings.customNote}"
+            </p>
+          )}
+
+          {settings.showQR && !spec.isMicroHeight && renderDivider()}
+
+          {/* 9. FOOTER TEXT */}
+          {settings.footerText && !spec.isMicroHeight && (
+            <p className={`${spec.footerClass} font-sans text-black leading-tight max-w-full px-1`}>
+              {settings.footerText}
+            </p>
+          )}
+        </div>
+      )}
     </div>
   );
 };

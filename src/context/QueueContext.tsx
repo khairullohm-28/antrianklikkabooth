@@ -47,6 +47,9 @@ interface QueueContextType {
   // Audio state
   soundEnabled: boolean;
   setSoundEnabled: (enabled: boolean) => void;
+
+  // Firebase Quota & Offline state
+  isQuotaExceeded: boolean;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
@@ -151,6 +154,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Ref to prevent polling from overwriting recent local updates (race condition prevention)
   const lastMutationTimeRef = useRef<number>(0);
+  const isQuotaExceededRef = useRef<boolean>(false);
+  const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
 
   // Save helper for Firebase Firestore
   const saveToFirebase = useCallback(
@@ -163,6 +168,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       newAdminPin: string,
       activeLastCalled?: Ticket | null
     ) => {
+      if (isQuotaExceededRef.current) return;
       try {
         lastMutationTimeRef.current = Date.now();
         const docRef = doc(db, 'photobooth', 'appState');
@@ -180,8 +186,16 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           },
           { merge: true }
         );
-      } catch (err) {
-        console.warn('Firebase save error:', err);
+      } catch (err: any) {
+        const errMsg = String(err?.message || err);
+        const errCode = String(err?.code || '');
+        if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
+          isQuotaExceededRef.current = true;
+          setIsQuotaExceeded(true);
+          console.info('[QueueContext] Firebase Firestore quota limit reached. Seamlessly switched to Local Synchronization (BroadcastChannel & LocalStorage).');
+        } else {
+          console.warn('Firebase save error:', err);
+        }
       }
     },
     [lastCalledTicket]
@@ -539,7 +553,15 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         }
       },
       (error) => {
-        console.warn('Firebase onSnapshot error:', error);
+        const errMsg = String(error?.message || error);
+        const errCode = String((error as any)?.code || '');
+        if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
+          isQuotaExceededRef.current = true;
+          setIsQuotaExceeded(true);
+          console.info('[QueueContext] Firestore Quota exceeded. Offline Local Mode active (BroadcastChannel & LocalStorage).');
+        } else {
+          console.warn('Firebase onSnapshot error:', error);
+        }
       }
     );
 
@@ -1071,6 +1093,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
         soundEnabled,
         setSoundEnabled,
+        isQuotaExceeded,
       }}
     >
       {children}

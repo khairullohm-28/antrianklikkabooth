@@ -1,6 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../context/QueueContext';
 import { Users, Megaphone, Maximize2, Minimize2, Sparkles, Camera } from 'lucide-react';
+import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
 
 export const MonitorDashboard: React.FC = () => {
   const { booths, tickets, lastCalledTicket, printSettings } = useQueue();
@@ -104,6 +105,7 @@ export const MonitorDashboard: React.FC = () => {
           </div>
 
           <div className="flex items-center gap-2">
+            <ConnectionStatusBadge showText={false} minimal={true} />
             {/* Fullscreen Toggle Button */}
             <button
               onClick={toggleFullscreen}

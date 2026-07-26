@@ -3,6 +3,7 @@ import { useQueue } from '../../context/QueueContext';
 import { Bell, Volume2, Clock, Search, QrCode, Sparkles, CheckCircle2, RefreshCw, Users, Camera } from 'lucide-react';
 import confetti from 'canvas-confetti';
 import { playDoubleChimeSound } from '../../utils/audio';
+import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
 
 export const CustomerDashboard: React.FC = () => {
   const {
@@ -100,10 +101,31 @@ export const CustomerDashboard: React.FC = () => {
     ? booths.find((b) => b.id === currentCustomerTicket.boothId) || booths[0]
     : null;
 
-  // Find current active called ticket for this booth
-  const currentCalledTicketInBooth = currentCustomerTicket
-    ? tickets.find((t) => t.boothId === currentCustomerTicket.boothId && t.status === 'called')
-    : null;
+  // Find current active called ticket for this booth (shared centralized state synchronization)
+  const currentCalledTicketInBooth = useMemo(() => {
+    if (!targetBooth) return null;
+
+    // 1. Search for active ticket with 'called' or 'serving' status in this booth
+    const active = tickets.find(
+      (t) => t.boothId === targetBooth.id && (t.status === 'called' || (t.status as string) === 'serving')
+    );
+    if (active) return active;
+
+    // 2. Fallback to lastCalledTicket if it belongs to this booth
+    if (lastCalledTicket && lastCalledTicket.boothId === targetBooth.id) {
+      return lastCalledTicket;
+    }
+
+    // 3. Fallback to booth sequence match
+    if (targetBooth.currentNumber > 0) {
+      const formattedSeq = String(targetBooth.currentNumber).padStart(3, '0');
+      const expectedNum = `${targetBooth.code}${formattedSeq}`;
+      const foundBySeq = tickets.find((t) => t.boothId === targetBooth.id && t.ticketNumber === expectedNum);
+      if (foundBySeq) return foundBySeq;
+    }
+
+    return null;
+  }, [targetBooth, tickets, lastCalledTicket]);
 
   // Calculate waiting sequence count
   const ticketsAhead = currentCustomerTicket
@@ -122,7 +144,15 @@ export const CustomerDashboard: React.FC = () => {
   const estimatedWaitMinutes = Math.max(0, ticketsAhead * avgTime);
 
   // Check if customer ticket is CALLED right now!
-  const isMyTurn = Boolean(currentCustomerTicket && currentCustomerTicket.status === 'called');
+  const isMyTurn = Boolean(
+    currentCustomerTicket &&
+      (currentCustomerTicket.status === 'called' ||
+        (currentCustomerTicket.status as string) === 'serving' ||
+        (lastCalledTicket &&
+          (lastCalledTicket.id === currentCustomerTicket.id ||
+            lastCalledTicket.ticketNumber.trim().toUpperCase() ===
+              currentCustomerTicket.ticketNumber.trim().toUpperCase())))
+  );
 
   // Trigger celebration, popup modal & chime whenever ticket is called
   useEffect(() => {
@@ -282,7 +312,11 @@ export const CustomerDashboard: React.FC = () => {
       )}
       {/* SEARCH / LOOKUP TICKET CARD */}
       {!currentCustomerTicket ? (
-        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xl space-y-5 text-center">
+        <div className="bg-white p-6 sm:p-8 rounded-3xl border border-slate-200/90 shadow-xl space-y-5 text-center relative">
+          <div className="absolute top-4 right-4 z-10">
+            <ConnectionStatusBadge showText={false} minimal={true} />
+          </div>
+
           <div className="w-14 h-14 rounded-2xl bg-red-100 text-red-600 flex items-center justify-center mx-auto shadow-inner">
             <QrCode className="w-7 h-7" />
           </div>
@@ -339,6 +373,42 @@ export const CustomerDashboard: React.FC = () => {
             >
               {soundEnabled ? 'Suara Aktif' : 'Aktifkan'}
             </button>
+          </div>
+
+          {/* Live Active Queue Numbers Across All Booths */}
+          <div className="pt-3 border-t border-slate-100 text-left space-y-2">
+            <span className="text-[10px] font-extrabold uppercase tracking-widest text-slate-400 block">
+              NOMOR DIPANGGIL SAAT INI (REALTIME)
+            </span>
+            <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+              {booths.map((b) => {
+                const activeT =
+                  tickets.find(
+                    (t) => t.boothId === b.id && (t.status === 'called' || (t.status as string) === 'serving')
+                  ) || (lastCalledTicket && lastCalledTicket.boothId === b.id ? lastCalledTicket : null);
+
+                return (
+                  <div
+                    key={b.id}
+                    className="p-3 bg-slate-50/80 rounded-2xl border border-slate-200/90 flex items-center justify-between shadow-sm"
+                  >
+                    <div>
+                      <span className="text-xs font-black text-slate-900 block">{b.name}</span>
+                      <span className="text-[10px] font-medium text-slate-500 block">
+                        {activeT ? 'Sedang Dipanggil' : 'Belum Ada Panggilan'}
+                      </span>
+                    </div>
+                    <span
+                      className={`font-mono text-lg font-black tracking-tight ${
+                        activeT ? 'text-red-600 animate-pulse' : 'text-slate-300'
+                      }`}
+                    >
+                      {activeT ? activeT.ticketNumber : '---'}
+                    </span>
+                  </div>
+                );
+              })}
+            </div>
           </div>
         </div>
       ) : (
