@@ -378,19 +378,36 @@ export const getPaperDimensionSpec = (
 
   // Adjust pageSizeCss and orientation
   spec.orientation = orientation;
-  if (spec.heightMm !== null) {
-    if (orientation === 'landscape') {
-      spec.pageSizeCss = `${spec.heightMm}mm ${spec.widthMm}mm`;
-      // Swap width/height for display preview box if landscape
-      const tempW = spec.widthPx;
-      spec.widthPx = spec.heightPx !== 'auto' ? spec.heightPx : '280px';
-      spec.heightPx = tempW;
+
+  if (orientation === 'landscape') {
+    if (spec.heightMm !== null) {
+      const origW = spec.widthMm;
+      const origH = spec.heightMm;
+      spec.widthMm = origH;
+      spec.heightMm = origW;
+
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm landscape`;
+
+      // Adjust pixel preview dimensions for landscape display
+      const origPxW = parseInt(spec.widthPx) || 280;
+      const origPxH = parseInt(spec.heightPx) || 380;
+      spec.widthPx = `${Math.max(origPxW, origPxH)}px`;
+      spec.heightPx = `${Math.min(origPxW, origPxH)}px`;
+
+      // Scaling down QR code slightly in landscape to fit reduced height
+      spec.qrSizePx = Math.min(spec.qrSizePx, Math.floor((spec.heightMm * 3.78) * 0.42));
+      spec.logoMaxPx = Math.min(spec.logoMaxPx, Math.floor((spec.heightMm * 3.78) * 0.22));
     } else {
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm`;
+      // Continuous roll (58mm, 80mm) in landscape
+      spec.pageSizeCss = `${spec.widthMm}mm auto landscape`;
     }
   } else {
-    // For continuous roll paper (58mm, 80mm)
-    spec.pageSizeCss = `${spec.widthMm}mm auto`;
+    // Portrait orientation
+    if (spec.heightMm !== null) {
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm portrait`;
+    } else {
+      spec.pageSizeCss = `${spec.widthMm}mm auto portrait`;
+    }
   }
 
   return spec;

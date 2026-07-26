@@ -159,9 +159,9 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
       className={`bg-white text-slate-900 ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-between transition-all overflow-hidden box-border`}
       style={{
         width: isPrintMode ? '100%' : spec.widthPx,
-        height: spec.heightPx !== 'auto' ? spec.heightPx : 'auto',
-        minHeight: spec.heightPx !== 'auto' ? spec.heightPx : 'auto',
-        maxHeight: spec.heightPx !== 'auto' ? spec.heightPx : 'none',
+        height: isPrintMode ? (spec.heightMm ? '100%' : 'auto') : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
+        minHeight: isPrintMode ? 'auto' : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
+        maxHeight: isPrintMode ? '100%' : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
       }}
     >
       <div className="w-full flex flex-col items-center justify-center space-y-0.5">
@@ -216,7 +216,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
         )}
 
         {/* ESTIMATED WAIT TIME */}
-        {Boolean(settings.showEstimatedWait) && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
+        {settings.showEstimatedWait === true && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
           <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
             Estimasi: ~{estimatedWaitMinutes} mnt
           </div>

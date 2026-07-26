@@ -46,7 +46,7 @@ export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   showBoothName: true,
   showTicketNumber: true,
   showDateTime: true,
-  showEstimatedWait: true,
+  showEstimatedWait: false,
 
   dateTimeFormat: 'DD/MM/YYYY, HH:mm',
 

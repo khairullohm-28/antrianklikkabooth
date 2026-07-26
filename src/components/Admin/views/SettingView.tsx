@@ -298,7 +298,7 @@ export const SettingView: React.FC = () => {
                   <label className="flex items-center gap-2 p-2 bg-slate-50 border border-slate-200 rounded-xl cursor-pointer hover:bg-slate-100">
                     <input
                       type="checkbox"
-                      checked={localPrintSettings.showEstimatedWait ?? true}
+                      checked={Boolean(localPrintSettings.showEstimatedWait)}
                       onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showEstimatedWait: e.target.checked })}
                       className="accent-red-600 rounded"
                     />

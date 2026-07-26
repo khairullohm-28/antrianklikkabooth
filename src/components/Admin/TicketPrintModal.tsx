@@ -152,8 +152,8 @@ export const TicketPrintModal: React.FC = () => {
                   padding: 0 !important;
                   background: #ffffff !important;
                   width: 100% !important;
-                  height: auto !important;
-                  overflow: visible !important;
+                  height: 100% !important;
+                  overflow: hidden !important;
                 }
                 body > *:not(#thermal-print-portal) {
                   display: none !important;
@@ -163,15 +163,23 @@ export const TicketPrintModal: React.FC = () => {
                   position: absolute !important;
                   top: 0 !important;
                   left: 0 !important;
-                  width: ${spec.widthMm}mm !important;
+                  width: 100% !important;
                   max-width: ${spec.widthMm}mm !important;
-                  margin: 0 !important;
+                  ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : ''}
+                  margin: 0 auto !important;
                   padding: 0 !important;
                   background: #ffffff !important;
+                  overflow: hidden !important;
+                  page-break-after: avoid !important;
+                  page-break-before: avoid !important;
+                  page-break-inside: avoid !important;
+                  break-after: avoid !important;
+                  break-inside: avoid !important;
                 }
                 #printable-thermal-ticket {
                   width: 100% !important;
-                  max-width: ${spec.widthMm}mm !important;
+                  max-width: 100% !important;
+                  ${spec.heightMm ? `height: 100% !important; max-height: 100% !important;` : ''}
                   margin: 0 auto !important;
                   padding: ${spec.printPaddingCss} !important;
                   box-sizing: border-box !important;
@@ -182,6 +190,7 @@ export const TicketPrintModal: React.FC = () => {
                   page-break-inside: avoid !important;
                   break-after: avoid !important;
                   break-inside: avoid !important;
+                  overflow: hidden !important;
                 }
               }
             `}</style>
