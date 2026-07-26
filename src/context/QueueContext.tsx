@@ -149,18 +149,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   });
 
-  const setSoundEnabled = useCallback((enabled: boolean | ((prev: boolean) => boolean)) => {
-    setSoundEnabledState((prev) => {
-      const next = typeof enabled === 'function' ? enabled(prev) : enabled;
-      try {
-        localStorage.setItem('photobooth_sound_enabled', JSON.stringify(next));
-      } catch (e) {
-        console.warn('Failed to save sound preference:', e);
-      }
-      return next;
-    });
-  }, []);
-
   // Ref to prevent polling from overwriting recent local updates (race condition prevention)
   const lastMutationTimeRef = useRef<number>(0);
 
@@ -173,7 +161,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       newScript: AppsScriptConfig,
       newLogs: ActivityLog[],
       newAdminPin: string,
-      activeLastCalled?: Ticket | null
+      activeLastCalled?: Ticket | null,
+      newSoundEnabled?: boolean
     ) => {
       try {
         lastMutationTimeRef.current = Date.now();
@@ -188,6 +177,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             logs: newLogs,
             adminPin: newAdminPin,
             lastCalledTicket: activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket,
+            soundEnabled: newSoundEnabled !== undefined ? newSoundEnabled : soundEnabled,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
@@ -196,7 +186,23 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.warn('Firebase save error:', err);
       }
     },
-    [lastCalledTicket]
+    [lastCalledTicket, soundEnabled]
+  );
+
+  const setSoundEnabled = useCallback(
+    (enabled: boolean | ((prev: boolean) => boolean)) => {
+      setSoundEnabledState((prev) => {
+        const next = typeof enabled === 'function' ? enabled(prev) : enabled;
+        try {
+          localStorage.setItem('photobooth_sound_enabled', JSON.stringify(next));
+        } catch (e) {
+          console.warn('Failed to save sound preference:', e);
+        }
+        saveToFirebase(booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, next);
+        return next;
+      });
+    },
+    [booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, saveToFirebase]
   );
 
   const changeAdminPin = useCallback((newPin: string) => {
@@ -468,6 +474,12 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     };
   }, [tickets, selectedTicketForCustomer]);
 
+  // Ref to hold latest state for initial seeding without re-subscribing onSnapshot
+  const stateRef = useRef({ booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled });
+  useEffect(() => {
+    stateRef.current = { booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled };
+  }, [booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled]);
+
   // Firebase Realtime Firestore Subscription across all clients/devices
   useEffect(() => {
     const docRef = doc(db, 'photobooth', 'appState');
@@ -514,6 +526,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               setAdminPin(data.adminPin);
               try { localStorage.setItem('photobooth_admin_pin', data.adminPin); } catch {}
             }
+            if (data.soundEnabled !== undefined && typeof data.soundEnabled === 'boolean') {
+              setSoundEnabledState(data.soundEnabled);
+              try { localStorage.setItem('photobooth_sound_enabled', JSON.stringify(data.soundEnabled)); } catch {}
+            }
             if (data.lastCalledTicket !== undefined) {
               const nextLast = data.lastCalledTicket as Ticket | null;
               setLastCalledTicket(nextLast);
@@ -524,6 +540,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               }
             }
           }
+        } else {
+          // Document does not exist yet on Firestore -> Seed initial state
+          const s = stateRef.current;
+          saveToFirebase(s.booths, s.tickets, s.printSettings, s.appsScriptConfig, s.logs, s.adminPin, s.lastCalledTicket, s.soundEnabled);
         }
       },
       (error) => {
@@ -532,7 +552,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     );
 
     return () => unsubscribe();
-  }, [soundEnabled]);
+  }, [saveToFirebase]);
 
   // Save to LocalStorage, Firebase & broadcast
   const saveAndBroadcast = useCallback(

@@ -94,6 +94,18 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
   // Local state for Apps Script form
   const [localScriptConfig, setLocalScriptConfig] = useState<AppsScriptConfig>(appsScriptConfig);
 
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalPrintSettings(printSettings);
+    }
+  }, [isOpen, printSettings]);
+
+  React.useEffect(() => {
+    if (isOpen) {
+      setLocalScriptConfig(appsScriptConfig);
+    }
+  }, [isOpen, appsScriptConfig]);
+
   if (!isOpen) return null;
 
   const handleAddBooth = (e: React.FormEvent) => {

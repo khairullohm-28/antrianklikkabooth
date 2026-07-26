@@ -1,4 +1,4 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../../context/QueueContext';
 import { PrintSettings } from '../../../types';
 import { announceQueueVoice, playChimeSound } from '../../../utils/audio';
@@ -21,6 +21,10 @@ export const MediaDisplayView: React.FC = () => {
 
   const [localSettings, setLocalSettings] = useState<PrintSettings>(printSettings);
   const [saveSuccess, setSaveSuccess] = useState(false);
+
+  useEffect(() => {
+    setLocalSettings(printSettings);
+  }, [printSettings]);
 
   const handleMonitorLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
