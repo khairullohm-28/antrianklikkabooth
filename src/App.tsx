@@ -3,8 +3,7 @@ import { QueueProvider, useQueue } from './context/QueueContext';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { CustomerDashboard } from './components/Customer/CustomerDashboard';
 import { MonitorDashboard } from './components/Monitor/MonitorDashboard';
-import { GoogleScriptGuide } from './components/GoogleScriptGuide';
-import { LayoutDashboard, Tv, UserCheck, Code2 } from 'lucide-react';
+import { LayoutDashboard, Tv, UserCheck } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { activeTab, setActiveTab, isAdminLoggedIn } = useQueue();
@@ -40,7 +39,6 @@ const MainContent: React.FC = () => {
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {activeTab === 'admin' && <AdminDashboard />}
           {activeTab === 'customer' && <CustomerDashboard />}
-          {activeTab === 'script-guide' && <GoogleScriptGuide />}
         </main>
       </div>
 
@@ -58,7 +56,7 @@ const MainContent: React.FC = () => {
         </div>
       )}
 
-      {/* Footer Nav Bar (Only visible in Admin & Apps Script Guide) */}
+      {/* Footer Nav Bar (Only visible in Admin) */}
       {!isPublicDashboard && (
         <footer className="bg-white/90 backdrop-blur-md border-t border-slate-200 py-4 mt-8 text-center text-xs text-slate-500 print:hidden">
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
@@ -91,15 +89,6 @@ const MainContent: React.FC = () => {
               >
                 <Tv className="w-3.5 h-3.5" />
                 <span>Monitor TV</span>
-              </button>
-              <button
-                onClick={() => setActiveTab('script-guide')}
-                className={`hover:text-red-600 px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
-                  activeTab === 'script-guide' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
-                }`}
-              >
-                <Code2 className="w-3.5 h-3.5" />
-                <span>Apps Script</span>
               </button>
             </div>
           </div>

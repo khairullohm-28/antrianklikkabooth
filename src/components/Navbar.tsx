@@ -1,6 +1,6 @@
 import React, { useState } from 'react';
 import { useQueue } from '../context/QueueContext';
-import { LayoutDashboard, Tv, UserCheck, Volume2, VolumeX, Database, Code2, Sparkles, LogOut, ShieldCheck, Share2, Check } from 'lucide-react';
+import { LayoutDashboard, Tv, UserCheck, Volume2, VolumeX, LogOut, Share2, Check } from 'lucide-react';
 import { ActiveTab } from '../types';
 
 export const Navbar: React.FC = () => {
@@ -9,8 +9,6 @@ export const Navbar: React.FC = () => {
     setActiveTab,
     soundEnabled,
     setSoundEnabled,
-    appsScriptConfig,
-    triggerSyncToGoogleSheets,
     isAdminLoggedIn,
     logoutAdmin,
   } = useQueue();
@@ -33,11 +31,6 @@ export const Navbar: React.FC = () => {
       id: 'customer',
       label: 'Dashboard Pengguna',
       icon: <UserCheck className="w-4 h-4" />,
-    },
-    {
-      id: 'script-guide',
-      label: 'Apps Script & Deploy',
-      icon: <Code2 className="w-4 h-4" />,
     },
   ];
 
@@ -108,35 +101,6 @@ export const Navbar: React.FC = () => {
               {copiedUrl ? <Check className="w-3.5 h-3.5 text-emerald-300" /> : <Share2 className="w-3.5 h-3.5" />}
               <span>{copiedUrl ? 'URL Disalin!' : 'Salin Link URL'}</span>
             </button>
-
-            {/* Google Sheets Sync Pill */}
-            {appsScriptConfig.enabled && (
-              <button
-                id="btn-trigger-sync"
-                onClick={triggerSyncToGoogleSheets}
-                className={`hidden xl:flex items-center gap-1.5 px-3 py-1.5 rounded-xl text-xs font-bold border transition-all ${
-                  appsScriptConfig.syncStatus === 'syncing'
-                    ? 'bg-white/20 text-white border-white/40 animate-pulse'
-                    : appsScriptConfig.syncStatus === 'success'
-                    ? 'bg-emerald-500 text-white border-emerald-400 shadow-sm'
-                    : 'bg-rose-900 text-white border-rose-700'
-                }`}
-                title={
-                  appsScriptConfig.lastSyncTime
-                    ? `Terakhir sinkron: ${appsScriptConfig.lastSyncTime}`
-                    : 'Klik untuk sinkron ke Google Sheets'
-                }
-              >
-                <Database className="w-3.5 h-3.5" />
-                <span>
-                  {appsScriptConfig.syncStatus === 'syncing'
-                    ? 'Sinkron...'
-                    : appsScriptConfig.syncStatus === 'success'
-                    ? 'Sheets Connected'
-                    : 'Sync Error'}
-                </span>
-              </button>
-            )}
 
             {/* Sound Toggle Button */}
             <button

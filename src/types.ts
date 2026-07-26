@@ -122,13 +122,4 @@ export interface ActivityLog {
   ticketNumber?: string;
 }
 
-export interface AppsScriptConfig {
-  enabled: boolean;
-  webAppUrl: string;
-  autoSync: boolean;
-  lastSyncTime?: string;
-  syncStatus: 'idle' | 'syncing' | 'success' | 'error';
-  errorMessage?: string;
-}
-
-export type ActiveTab = 'admin' | 'monitor' | 'customer' | 'script-guide';
+export type ActiveTab = 'admin' | 'monitor' | 'customer';

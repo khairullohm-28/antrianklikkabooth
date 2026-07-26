@@ -82,14 +82,14 @@ export const AdminDashboard: React.FC = () => {
 
   // Settings modal bridge if requested by BoothCard edit button
   const [isSettingsOpen, setIsSettingsOpen] = useState(false);
-  const [settingsModalTab, setSettingsModalTab] = useState<'booths' | 'label' | 'script' | 'danger'>('booths');
+  const [settingsModalTab, setSettingsModalTab] = useState<'booths' | 'label' | 'password' | 'danger'>('booths');
 
   // If not logged in as Admin, show Admin Login Card
   if (!isAdminLoggedIn) {
     return <AdminLogin />;
   }
 
-  const handleOpenSettingsModal = (tab: 'booths' | 'label' | 'script' | 'danger' = 'booths') => {
+  const handleOpenSettingsModal = (tab: 'booths' | 'label' | 'password' | 'danger' = 'booths') => {
     setSettingsModalTab(tab);
     setIsSettingsOpen(true);
   };

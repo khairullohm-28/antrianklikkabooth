@@ -22,7 +22,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   id = 'printable-thermal-ticket',
   isPrintMode = false,
 }) => {
-  const { printSettings: contextSettings, appsScriptConfig } = useQueue();
+  const { printSettings: contextSettings } = useQueue();
   const settings = propSettings || propPrintSettings || contextSettings || {};
 
   const spec = getPaperDimensionSpec(settings.paperWidth, settings.orientation || 'portrait');
@@ -148,8 +148,6 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   let customerQrUrl = `${origin}?view=customer&ticket=${ticket.ticketNumber}`;
   if (settings.qrCustomUrlPattern && settings.qrCustomUrlPattern.trim()) {
     customerQrUrl = settings.qrCustomUrlPattern.replace('{ticket}', ticket.ticketNumber);
-  } else if (appsScriptConfig && appsScriptConfig.enabled && appsScriptConfig.webAppUrl) {
-    customerQrUrl += `&gas=${encodeURIComponent(appsScriptConfig.webAppUrl)}`;
   }
 
   // Calculate dynamic logo width & QR size based on user overrides + paper spec

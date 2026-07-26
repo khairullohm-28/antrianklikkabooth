@@ -1,15 +1,13 @@
 import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
-import { Booth, Ticket, PrintSettings, AppsScriptConfig, ActivityLog, ActiveTab, ActivityAction } from '../types';
-import { DEFAULT_BOOTHS, DEFAULT_PRINT_SETTINGS, DEFAULT_APPS_SCRIPT_CONFIG, INITIAL_TICKETS, INITIAL_LOGS } from '../data/defaultData';
+import { Booth, Ticket, PrintSettings, ActivityLog, ActiveTab, ActivityAction } from '../types';
+import { DEFAULT_BOOTHS, DEFAULT_PRINT_SETTINGS, INITIAL_TICKETS, INITIAL_LOGS } from '../data/defaultData';
 import { announceQueueVoice } from '../utils/audio';
-import { syncToGoogleAppsScript, fetchFromGoogleAppsScript } from '../utils/googleAppsScript';
 import { db, doc, onSnapshot, setDoc } from '../firebase';
 
 interface QueueContextType {
   booths: Booth[];
   tickets: Ticket[];
   printSettings: PrintSettings;
-  appsScriptConfig: AppsScriptConfig;
   logs: ActivityLog[];
   activeTab: ActiveTab;
   setActiveTab: (tab: ActiveTab) => void;
@@ -39,10 +37,8 @@ interface QueueContextType {
   editBooth: (boothId: string, updated: Partial<Booth>) => void;
   deleteBooth: (boothId: string) => void;
   updatePrintSettings: (settings: Partial<PrintSettings>) => void;
-  updateAppsScriptConfig: (config: Partial<AppsScriptConfig>) => void;
   clearTodayLogs: () => void;
   resetQueue: () => void;
-  triggerSyncToGoogleSheets: () => Promise<void>;
   
   // Audio state
   soundEnabled: boolean;
@@ -85,15 +81,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       return saved ? { ...DEFAULT_PRINT_SETTINGS, ...JSON.parse(saved) } : DEFAULT_PRINT_SETTINGS;
     } catch {
       return DEFAULT_PRINT_SETTINGS;
-    }
-  });
-
-  const [appsScriptConfig, setAppsScriptConfig] = useState<AppsScriptConfig>(() => {
-    try {
-      const saved = localStorage.getItem(LOCAL_STORAGE_KEY_SCRIPT);
-      return saved ? JSON.parse(saved) : DEFAULT_APPS_SCRIPT_CONFIG;
-    } catch {
-      return DEFAULT_APPS_SCRIPT_CONFIG;
     }
   });
 
@@ -163,7 +150,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       newBooths: Booth[],
       newTickets: Ticket[],
       newPrint: PrintSettings,
-      newScript: AppsScriptConfig,
       newLogs: ActivityLog[],
       newAdminPin: string,
       activeLastCalled?: Ticket | null
@@ -178,7 +164,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             booths: newBooths,
             tickets: newTickets,
             printSettings: newPrint,
-            appsScriptConfig: newScript,
             logs: (newLogs || []).slice(0, 25),
             adminPin: newAdminPin,
             lastCalledTicket: activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket,
@@ -219,116 +204,14 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const changeAdminPin = useCallback((newPin: string) => {
     setAdminPin(newPin);
     localStorage.setItem('photobooth_admin_pin', newPin);
-    saveToFirebase(booths, tickets, printSettings, appsScriptConfig, logs, newPin, lastCalledTicket);
-    if (appsScriptConfig.enabled && appsScriptConfig.autoSync && appsScriptConfig.webAppUrl) {
-      syncToGoogleAppsScript(appsScriptConfig, booths, tickets, logs, newPin);
-    }
-  }, [appsScriptConfig, booths, tickets, logs, printSettings, lastCalledTicket, saveToFirebase]);
+    saveToFirebase(booths, tickets, printSettings, logs, newPin, lastCalledTicket);
+  }, [booths, tickets, logs, printSettings, lastCalledTicket, saveToFirebase]);
 
   // Broadcast Channel & Storage listener for multi-tab sync
   const [broadcastChannel, setBroadcastChannel] = useState<BroadcastChannel | null>(null);
 
   // Lock ref to prevent rapid double inputs / clicks
   const lastActionTimeRef = useRef<number>(0);
-
-  // Periodic Google Apps Script remote polling (every 800ms if enabled - sub-second realtime)
-  useEffect(() => {
-    if (!appsScriptConfig.enabled || !appsScriptConfig.webAppUrl) return;
-
-    const pollAppsScript = async () => {
-      try {
-        // Do not overwrite local state if a local action occurred within the last 1.2 seconds
-        if (Date.now() - lastMutationTimeRef.current < 1200) {
-          return;
-        }
-
-        const res = await fetchFromGoogleAppsScript(appsScriptConfig);
-
-        // Re-check mutation lock after async fetch completes
-        if (Date.now() - lastMutationTimeRef.current < 1200) {
-          return;
-        }
-
-        if (res.success) {
-          if (res.adminPin && res.adminPin.trim().length > 0) {
-            setAdminPin((prev) => {
-              if (prev !== res.adminPin) {
-                localStorage.setItem('photobooth_admin_pin', res.adminPin!);
-                return res.adminPin!;
-              }
-              return prev;
-            });
-          }
-          if (Array.isArray(res.tickets)) {
-            setTickets((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(res.tickets)) {
-                localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(res.tickets));
-                return res.tickets;
-              }
-              return prev;
-            });
-
-            // Sync lastCalledTicket from remote tickets
-            const calledTickets = res.tickets.filter((t) => t.status === 'called');
-            if (calledTickets.length > 0) {
-              // Get the most recently called ticket
-              const latestCalled = [...calledTickets].sort((a, b) => {
-                const timeA = a.calledAt ? new Date(a.calledAt).getTime() : 0;
-                const timeB = b.calledAt ? new Date(b.calledAt).getTime() : 0;
-                return timeB - timeA;
-              })[0];
-
-              setLastCalledTicket((prevLast) => {
-                if (!prevLast || prevLast.id !== latestCalled.id || prevLast.calledAt !== latestCalled.calledAt) {
-                  localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(latestCalled));
-                  if (soundEnabled) {
-                    announceQueueVoice(latestCalled.ticketNumber, latestCalled.boothName, {
-                      voiceName: printSettings.speechVoiceName,
-                      rate: printSettings.speechRate,
-                      pitch: printSettings.speechPitch,
-                    });
-                  }
-                  return latestCalled;
-                }
-                return prevLast;
-              });
-            } else {
-              if (res.tickets.length === 0 || !res.tickets.some((t) => t.status === 'called')) {
-                setLastCalledTicket(null);
-                localStorage.removeItem('photobooth_last_called_ticket');
-              }
-            }
-          }
-          if (Array.isArray(res.booths) && res.booths.length > 0) {
-            setBooths((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(res.booths)) {
-                localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(res.booths));
-                return res.booths;
-              }
-              return prev;
-            });
-          }
-          if (Array.isArray(res.logs)) {
-            setLogs((prev) => {
-              if (JSON.stringify(prev) !== JSON.stringify(res.logs)) {
-                localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(res.logs));
-                return res.logs;
-              }
-              return prev;
-            });
-          }
-        }
-      } catch (err) {
-        console.warn('Error during pollAppsScript:', err);
-      }
-    };
-
-    // Initial fetch on mount / enable
-    pollAppsScript();
-
-    const interval = setInterval(pollAppsScript, 5000);
-    return () => clearInterval(interval);
-  }, [appsScriptConfig, soundEnabled]);
 
   useEffect(() => {
     const handleStorageChange = (e: StorageEvent) => {
@@ -337,9 +220,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
       if (e.key === LOCAL_STORAGE_KEY_BOOTHS && e.newValue) {
         try { setBooths(JSON.parse(e.newValue)); } catch (err) { console.error(err); }
-      }
-      if (e.key === LOCAL_STORAGE_KEY_SCRIPT && e.newValue) {
-        try { setAppsScriptConfig(JSON.parse(e.newValue)); } catch (err) { console.error(err); }
       }
       if (e.key === 'photobooth_last_called_ticket') {
         try { setLastCalledTicket(e.newValue ? JSON.parse(e.newValue) : null); } catch (err) { console.error(err); }
@@ -361,10 +241,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           if (data.booths) setBooths(data.booths);
           if (data.tickets) setTickets(data.tickets);
           if (data.printSettings) setPrintSettings(data.printSettings);
-          if (data.appsScriptConfig) {
-            setAppsScriptConfig(data.appsScriptConfig);
-            try { localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(data.appsScriptConfig)); } catch (e) { console.error(e); }
-          }
           if (data.logs) setLogs(data.logs);
           if (data.lastCalledTicket) setLastCalledTicket(data.lastCalledTicket);
         }
@@ -386,7 +262,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const hashParams = new URLSearchParams(rawHash);
 
       let viewParam = (searchParams.get('view') || hashParams.get('view')) as ActiveTab | null;
-      if (!viewParam && ['admin', 'monitor', 'customer', 'script-guide'].includes(rawHash)) {
+      if (!viewParam && ['admin', 'monitor', 'customer'].includes(rawHash)) {
         viewParam = rawHash as ActiveTab;
       }
 
@@ -398,34 +274,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         hashParams.get('ticket') ||
         hashParams.get('t');
 
-      const gasParam =
-        searchParams.get('gas') ||
-        searchParams.get('script') ||
-        searchParams.get('scriptUrl') ||
-        hashParams.get('gas');
-
-      if (gasParam) {
-        try {
-          const decodedUrl = decodeURIComponent(gasParam);
-          if (decodedUrl && decodedUrl.startsWith('http')) {
-            setAppsScriptConfig((prev) => {
-              if (prev.webAppUrl === decodedUrl && prev.enabled) return prev;
-              const newConfig: AppsScriptConfig = {
-                enabled: true,
-                autoSync: true,
-                webAppUrl: decodedUrl,
-                syncStatus: 'idle',
-              };
-              localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(newConfig));
-              return newConfig;
-            });
-          }
-        } catch (e) {
-          console.error('Failed to parse gas param from URL:', e);
-        }
-      }
-
-      if (viewParam && ['admin', 'monitor', 'customer', 'script-guide'].includes(viewParam)) {
+      if (viewParam && ['admin', 'monitor', 'customer'].includes(viewParam)) {
         setActiveTabState((prev) => (prev === viewParam ? prev : viewParam));
       }
 
@@ -485,10 +334,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, [tickets, booths]);
 
   // Ref to hold latest state for initial seeding without re-subscribing onSnapshot
-  const stateRef = useRef({ booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled });
+  const stateRef = useRef({ booths, tickets, printSettings, logs, adminPin, lastCalledTicket, soundEnabled });
   useEffect(() => {
-    stateRef.current = { booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled };
-  }, [booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled]);
+    stateRef.current = { booths, tickets, printSettings, logs, adminPin, lastCalledTicket, soundEnabled };
+  }, [booths, tickets, printSettings, logs, adminPin, lastCalledTicket, soundEnabled]);
 
   // Firebase Realtime Firestore Subscription across all clients/devices
   useEffect(() => {
@@ -524,10 +373,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               setPrintSettings((prev) => (JSON.stringify(prev) === JSON.stringify(mergedPrint) ? prev : mergedPrint));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(mergedPrint)); } catch {}
             }
-            if (data.appsScriptConfig) {
-              setAppsScriptConfig((prev) => (JSON.stringify(prev) === JSON.stringify(data.appsScriptConfig) ? prev : data.appsScriptConfig));
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(data.appsScriptConfig)); } catch {}
-            }
             if (Array.isArray(data.logs)) {
               setLogs((prev) => (JSON.stringify(prev) === JSON.stringify(data.logs) ? prev : data.logs));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(data.logs)); } catch {}
@@ -549,7 +394,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } else {
           // Document does not exist yet on Firestore -> Seed initial state
           const s = stateRef.current;
-          saveToFirebase(s.booths, s.tickets, s.printSettings, s.appsScriptConfig, s.logs, s.adminPin, s.lastCalledTicket);
+          saveToFirebase(s.booths, s.tickets, s.printSettings, s.logs, s.adminPin, s.lastCalledTicket);
         }
       },
       (error) => {
@@ -574,7 +419,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       newBooths: Booth[],
       newTickets: Ticket[],
       newPrint: PrintSettings,
-      newScript: AppsScriptConfig,
       newLogs: ActivityLog[],
       calledTicket?: Ticket | null
     ) => {
@@ -583,7 +427,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(newBooths));
       localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(newTickets));
       localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(newPrint));
-      localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(newScript));
       localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(newLogs));
       if (activeLastCalled) {
         localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(activeLastCalled));
@@ -591,7 +434,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         localStorage.removeItem('photobooth_last_called_ticket');
       }
 
-      saveToFirebase(newBooths, newTickets, newPrint, newScript, newLogs, adminPin, activeLastCalled);
+      saveToFirebase(newBooths, newTickets, newPrint, newLogs, adminPin, activeLastCalled);
 
       if (broadcastChannel) {
         broadcastChannel.postMessage({
@@ -600,21 +443,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             booths: newBooths,
             tickets: newTickets,
             printSettings: newPrint,
-            appsScriptConfig: newScript,
             logs: newLogs,
             lastCalledTicket: activeLastCalled,
           },
         });
-      }
-
-      if (newScript.enabled && newScript.autoSync && newScript.webAppUrl) {
-        syncToGoogleAppsScript(newScript, newBooths, newTickets, newLogs, adminPin)
-          .then(() => {
-            lastMutationTimeRef.current = Date.now();
-          })
-          .catch((err) => {
-            console.error('Auto sync to Google Apps Script failed:', err);
-          });
       }
     },
     [broadcastChannel, lastCalledTicket, adminPin, saveToFirebase]
@@ -638,31 +470,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     },
     [logs]
   );
-
-  // Background Google Apps Script sync
-  const triggerSyncToGoogleSheets = useCallback(async () => {
-    if (!appsScriptConfig.enabled || !appsScriptConfig.webAppUrl) return;
-
-    lastMutationTimeRef.current = Date.now();
-    setAppsScriptConfig((prev) => ({ ...prev, syncStatus: 'syncing', errorMessage: undefined }));
-    const result = await syncToGoogleAppsScript(appsScriptConfig, booths, tickets, logs, adminPin);
-    lastMutationTimeRef.current = Date.now();
-
-    const nowStr = new Date().toLocaleTimeString('id-ID', { hour: '2-digit', minute: '2-digit' });
-    if (result.success) {
-      setAppsScriptConfig((prev) => ({
-        ...prev,
-        syncStatus: 'success',
-        lastSyncTime: nowStr,
-      }));
-    } else {
-      setAppsScriptConfig((prev) => ({
-        ...prev,
-        syncStatus: 'error',
-        errorMessage: result.message,
-      }));
-    }
-  }, [appsScriptConfig, booths, tickets, logs]);
 
   // Actions implementation
   const callNext = useCallback(
@@ -737,7 +544,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setTickets(updatedTickets);
       setLastCalledTicket(calledTicket);
 
-      saveAndBroadcast(updatedBooths, updatedTickets, printSettings, appsScriptConfig, updatedLogs, calledTicket);
+      saveAndBroadcast(updatedBooths, updatedTickets, printSettings, updatedLogs, calledTicket);
 
       // Play sound
       if (soundEnabled) {
@@ -760,7 +567,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       return calledTicket;
     },
-    [booths, tickets, addLog, saveAndBroadcast, printSettings, appsScriptConfig, soundEnabled, broadcastChannel]
+    [booths, tickets, addLog, saveAndBroadcast, printSettings, soundEnabled, broadcastChannel]
   );
 
   const printTicket = useCallback(
@@ -807,11 +614,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setActiveTicketToPrint(newTicket);
       setIsPrintModalOpen(true);
 
-      saveAndBroadcast(updatedBooths, updatedTickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(updatedBooths, updatedTickets, printSettings, updatedLogs);
 
       return newTicket;
     },
-    [booths, tickets, addLog, saveAndBroadcast, printSettings, appsScriptConfig]
+    [booths, tickets, addLog, saveAndBroadcast, printSettings]
   );
 
   const recallTicket = useCallback(
@@ -849,9 +656,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       setTickets(updatedTickets);
       setLastCalledTicket(recalledTicket);
-      saveAndBroadcast(booths, updatedTickets, printSettings, appsScriptConfig, updatedLogs, recalledTicket);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs, recalledTicket);
     },
-    [tickets, soundEnabled, addLog, saveAndBroadcast, booths, printSettings, appsScriptConfig]
+    [tickets, soundEnabled, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const completeTicket = useCallback(
@@ -877,9 +684,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
 
       setTickets(updatedTickets);
-      saveAndBroadcast(booths, updatedTickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings, appsScriptConfig]
+    [tickets, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const cancelTicket = useCallback(
@@ -899,9 +706,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
 
       setTickets(updatedTickets);
-      saveAndBroadcast(booths, updatedTickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings, appsScriptConfig]
+    [tickets, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const deleteTicket = useCallback(
@@ -925,9 +732,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       if (selectedTicketForCustomer?.id === ticketId) {
         setSelectedTicketForCustomer(null);
       }
-      saveAndBroadcast(booths, updatedTickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings, appsScriptConfig, lastCalledTicket, selectedTicketForCustomer]
+    [tickets, addLog, saveAndBroadcast, booths, printSettings, lastCalledTicket, selectedTicketForCustomer]
   );
 
   const addBooth = useCallback(
@@ -951,9 +758,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const updatedLogs = addLog('ADD_BOOTH', `Menambah booth baru "${newBooth.name}" (${newBooth.code})`, newBooth.name);
 
       setBooths(updatedBooths);
-      saveAndBroadcast(updatedBooths, tickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs);
     },
-    [booths, addLog, saveAndBroadcast, tickets, printSettings, appsScriptConfig]
+    [booths, addLog, saveAndBroadcast, tickets, printSettings]
   );
 
   const editBooth = useCallback(
@@ -968,9 +775,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
 
       setBooths(updatedBooths);
-      saveAndBroadcast(updatedBooths, tickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs);
     },
-    [booths, addLog, saveAndBroadcast, tickets, printSettings, appsScriptConfig]
+    [booths, addLog, saveAndBroadcast, tickets, printSettings]
   );
 
   const deleteBooth = useCallback(
@@ -980,9 +787,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const updatedLogs = addLog('CANCEL', `Menghapus booth "${target?.name || boothId}"`);
 
       setBooths(updatedBooths);
-      saveAndBroadcast(updatedBooths, tickets, printSettings, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs);
     },
-    [booths, addLog, saveAndBroadcast, tickets, printSettings, appsScriptConfig]
+    [booths, addLog, saveAndBroadcast, tickets, printSettings]
   );
 
   const updatePrintSettings = useCallback(
@@ -991,27 +798,16 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const updatedLogs = addLog('UPDATE_SETTINGS', 'Mengubah pengaturan label cetak tiket');
 
       setPrintSettings(updated);
-      saveAndBroadcast(booths, tickets, updated, appsScriptConfig, updatedLogs);
+      saveAndBroadcast(booths, tickets, updated, updatedLogs);
     },
-    [printSettings, addLog, saveAndBroadcast, booths, tickets, appsScriptConfig]
-  );
-
-  const updateAppsScriptConfig = useCallback(
-    (config: Partial<AppsScriptConfig>) => {
-      const updated = { ...appsScriptConfig, ...config };
-      const updatedLogs = addLog('UPDATE_SETTINGS', 'Mengubah konfigurasi Google Apps Script');
-
-      setAppsScriptConfig(updated);
-      saveAndBroadcast(booths, tickets, printSettings, updated, updatedLogs);
-    },
-    [appsScriptConfig, addLog, saveAndBroadcast, booths, tickets, printSettings]
+    [printSettings, addLog, saveAndBroadcast, booths, tickets]
   );
 
   const clearTodayLogs = useCallback(() => {
     lastMutationTimeRef.current = Date.now();
     setLogs([]);
-    saveAndBroadcast(booths, tickets, printSettings, appsScriptConfig, []);
-  }, [booths, tickets, printSettings, appsScriptConfig, saveAndBroadcast]);
+    saveAndBroadcast(booths, tickets, printSettings, []);
+  }, [booths, tickets, printSettings, saveAndBroadcast]);
 
   const resetQueue = useCallback(() => {
     lastMutationTimeRef.current = Date.now();
@@ -1036,8 +832,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     } catch (err) {
       console.error(err);
     }
-    saveAndBroadcast(resetBooths, [], printSettings, appsScriptConfig, resetLogs, null);
-  }, [booths, saveAndBroadcast, printSettings, appsScriptConfig]);
+    saveAndBroadcast(resetBooths, [], printSettings, resetLogs, null);
+  }, [booths, saveAndBroadcast, printSettings]);
 
   const setActiveTab = useCallback((tab: ActiveTab) => {
     setActiveTabState(tab);
@@ -1045,12 +841,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
       url.searchParams.set('view', tab);
-      if (appsScriptConfig.webAppUrl) {
-        url.searchParams.set('gas', appsScriptConfig.webAppUrl);
-      }
       window.history.pushState({}, '', url.toString());
     }
-  }, [appsScriptConfig.webAppUrl]);
+  }, []);
 
   return (
     <QueueContext.Provider
@@ -1058,7 +851,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         booths,
         tickets,
         printSettings,
-        appsScriptConfig,
         logs,
         activeTab,
         setActiveTab,
@@ -1086,10 +878,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         editBooth,
         deleteBooth,
         updatePrintSettings,
-        updateAppsScriptConfig,
         clearTodayLogs,
         resetQueue,
-        triggerSyncToGoogleSheets,
 
         soundEnabled,
         setSoundEnabled,

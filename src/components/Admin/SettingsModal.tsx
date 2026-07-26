@@ -4,7 +4,6 @@ import { getPaperDimensionSpec } from '../../utils/paperDimensions';
 import {
   Booth,
   PrintSettings,
-  AppsScriptConfig,
   Ticket,
   TicketDateFormat,
   TicketDividerStyle,
@@ -19,7 +18,6 @@ import {
   Trash2,
   Printer,
   Sliders,
-  Database,
   Save,
   Check,
   RefreshCw,
@@ -45,7 +43,7 @@ import { TicketReceiptView } from './TicketReceiptView';
 interface SettingsModalProps {
   isOpen: boolean;
   onClose: () => void;
-  initialTab?: 'booths' | 'label' | 'script' | 'password' | 'danger';
+  initialTab?: 'booths' | 'label' | 'password' | 'danger';
 }
 
 export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, initialTab = 'booths' }) => {
@@ -56,9 +54,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     deleteBooth,
     printSettings,
     updatePrintSettings,
-    appsScriptConfig,
-    updateAppsScriptConfig,
-    triggerSyncToGoogleSheets,
     resetQueue,
     clearTodayLogs,
     adminPin,
@@ -67,7 +62,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
     setSoundEnabled,
   } = useQueue();
 
-  const [activeTab, setActiveTab] = useState<'booths' | 'label' | 'script' | 'password' | 'danger'>(initialTab);
+  const [activeTab, setActiveTab] = useState<'booths' | 'label' | 'password' | 'danger'>(initialTab);
   const [newPinInput, setNewPinInput] = useState('');
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [showPinInput, setShowPinInput] = useState(false);
@@ -91,20 +86,11 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
   // Sample Booth & Ticket for Live Preview Designer
   const [selectedPreviewBoothId, setSelectedPreviewBoothId] = useState<string>(booths[0]?.id || 'sample');
 
-  // Local state for Apps Script form
-  const [localScriptConfig, setLocalScriptConfig] = useState<AppsScriptConfig>(appsScriptConfig);
-
   React.useEffect(() => {
     if (isOpen) {
       setLocalPrintSettings(printSettings);
     }
   }, [isOpen, printSettings]);
-
-  React.useEffect(() => {
-    if (isOpen) {
-      setLocalScriptConfig(appsScriptConfig);
-    }
-  }, [isOpen, appsScriptConfig]);
 
   if (!isOpen) return null;
 
@@ -190,12 +176,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
       }
     };
     reader.readAsDataURL(file);
-  };
-
-  const handleSaveScriptConfig = () => {
-    updateAppsScriptConfig(localScriptConfig);
-    setSaveSuccess(true);
-    setTimeout(() => setSaveSuccess(false), 2000);
   };
 
   // Build Sample Ticket for Designer Live Preview
@@ -300,19 +280,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
             >
               <Printer className="w-4 h-4" />
               Desain Label Cetak
-            </button>
-
-            <button
-              id="settings-tab-script"
-              onClick={() => setActiveTab('script')}
-              className={`flex items-center gap-2.5 px-3.5 py-3 rounded-xl text-xs font-extrabold text-left transition-all ${
-                activeTab === 'script'
-                  ? 'bg-red-600 text-white shadow-md shadow-red-600/20'
-                  : 'text-slate-600 hover:bg-slate-200/60'
-              }`}
-            >
-              <Database className="w-4 h-4" />
-              Google Sheets Sync
             </button>
 
             <button
@@ -1173,88 +1140,7 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
               </div>
             )}
 
-            {/* TAB 3: GOOGLE SHEETS SCRIPT */}
-            {activeTab === 'script' && (
-              <div className="space-y-4">
-                <div>
-                  <h4 className="font-bold text-slate-900 text-base mb-1">
-                    Koneksi Database Google Sheets (Apps Script)
-                  </h4>
-                  <p className="text-xs text-slate-500">
-                    Sistem ini mendukung penyimpanan data antrian langsung ke Google Sheets secara gratis!
-                  </p>
-                </div>
-
-                <div className="p-4 bg-slate-50 rounded-xl border border-slate-200 space-y-3 text-xs">
-                  <div className="flex items-center justify-between">
-                    <span className="font-bold text-slate-800">Status Integrasi:</span>
-                    <label className="relative inline-flex items-center cursor-pointer">
-                      <input
-                        type="checkbox"
-                        checked={localScriptConfig.enabled}
-                        onChange={(e) =>
-                          setLocalScriptConfig({ ...localScriptConfig, enabled: e.target.checked })
-                        }
-                        className="sr-only peer"
-                      />
-                      <div className="w-9 h-5 bg-slate-300 peer-focus:outline-none rounded-full peer peer-checked:after:translate-x-full peer-checked:after:border-white after:content-[''] after:absolute after:top-[2px] after:left-[2px] after:bg-white after:border-slate-300 after:border after:rounded-full after:h-4 after:w-4 after:transition-all peer-checked:bg-red-600"></div>
-                    </label>
-                  </div>
-
-                  <div>
-                    <label className="font-bold text-slate-700 block mb-1">
-                      Google Apps Script Web App URL
-                    </label>
-                    <input
-                      type="text"
-                      value={localScriptConfig.webAppUrl}
-                      onChange={(e) =>
-                        setLocalScriptConfig({ ...localScriptConfig, webAppUrl: e.target.value.trim() })
-                      }
-                      placeholder="https://script.google.com/macros/s/AKfycbx.../exec"
-                      className="w-full px-3 py-2 border border-slate-300 rounded-xl font-mono text-xs focus:ring-2 focus:ring-red-500"
-                    />
-                  </div>
-
-                  {localScriptConfig.errorMessage && (
-                    <div className="p-2.5 bg-rose-50 border border-rose-200 text-rose-700 rounded-lg text-xs font-medium">
-                      {localScriptConfig.errorMessage}
-                    </div>
-                  )}
-
-                  <div className="flex items-center gap-2 pt-2">
-                    <button
-                      id="btn-save-script-config"
-                      onClick={handleSaveScriptConfig}
-                      className="flex-1 py-2 bg-red-600 hover:bg-red-700 text-white font-bold rounded-xl shadow-md transition-all flex items-center justify-center gap-1.5"
-                    >
-                      {saveSuccess ? <Check className="w-4 h-4 text-emerald-300" /> : <Save className="w-4 h-4" />}
-                      <span>{saveSuccess ? 'Tersimpan!' : 'Simpan URL'}</span>
-                    </button>
-
-                    <button
-                      id="btn-test-sheets-sync"
-                      onClick={triggerSyncToGoogleSheets}
-                      className="px-4 py-2 bg-slate-800 hover:bg-slate-900 text-white font-semibold rounded-xl transition-all flex items-center gap-1.5"
-                    >
-                      <RefreshCw className="w-3.5 h-3.5" />
-                      Test Sync
-                    </button>
-                  </div>
-                </div>
-
-                <div className="p-4 bg-red-50 rounded-xl border border-red-100">
-                  <h5 className="font-bold text-red-900 text-xs mb-1">
-                    Ingin tutorial lengkap atau menyalin kode Apps Script?
-                  </h5>
-                  <p className="text-xs text-red-700">
-                    Buka menu tab <strong className="font-semibold">"Apps Script & Deploy"</strong> di navigasi utama untuk mendapatkan script Google Sheets siap pakai dan panduan deploy Vercel!
-                  </p>
-                </div>
-              </div>
-            )}
-
-            {/* TAB 4: PASSWORD ADMIN & SUARA PANGGILAN */}
+            {/* TAB 3: PASSWORD ADMIN & SUARA PANGGILAN */}
             {activeTab === 'password' && (
               <div className="space-y-6">
                 <div>
