@@ -147,6 +147,17 @@ export const CustomerDashboard: React.FC = () => {
           } catch (audioErr) {
             console.warn('Customer chime playback warning:', audioErr);
           }
+
+          try {
+            if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission === 'granted') {
+              new Notification('GILIRAN ANDA TIBA! SILAKAN MASUK BOOTH', {
+                body: `Nomor antrian ${currentCustomerTicket.ticketNumber} dipanggil di ${currentCustomerTicket.boothName || 'Photobooth Studio'}!`,
+                tag: 'queue-call',
+              });
+            }
+          } catch (notifErr) {
+            console.warn('Browser notification trigger error:', notifErr);
+          }
         }
 
         try {
@@ -188,9 +199,16 @@ export const CustomerDashboard: React.FC = () => {
     }
   };
 
-  const handleToggleNotify = () => {
+  const handleToggleNotify = async () => {
     if (!soundEnabled) {
       playDoubleChimeSound();
+      if (typeof window !== 'undefined' && 'Notification' in window && Notification.permission !== 'granted') {
+        try {
+          await Notification.requestPermission();
+        } catch (e) {
+          console.warn('Notification permission error:', e);
+        }
+      }
       setSoundEnabled(true);
     } else {
       setSoundEnabled(false);
@@ -294,6 +312,34 @@ export const CustomerDashboard: React.FC = () => {
               <span>Lihat Status Antrian</span>
             </button>
           </form>
+
+          {/* Sound Notification Bar on Search Screen */}
+          <div className="pt-2 border-t border-slate-100 flex items-center justify-between gap-3 text-left">
+            <div className="flex items-center gap-2.5">
+              <div
+                className={`w-8 h-8 rounded-xl flex items-center justify-center font-bold shrink-0 ${
+                  soundEnabled ? 'bg-emerald-100 text-emerald-700' : 'bg-red-100 text-red-700'
+                }`}
+              >
+                <Bell className="w-4 h-4" />
+              </div>
+              <div>
+                <span className="font-extrabold text-slate-900 text-xs block">NOTIFIKASI SUARA</span>
+                <span className="text-[10px] text-slate-500 block">
+                  {soundEnabled ? 'Suara aktif di perangkat ini' : 'Klik untuk mengaktifkan bel suara'}
+                </span>
+              </div>
+            </div>
+            <button
+              type="button"
+              onClick={handleToggleNotify}
+              className={`px-3 py-1.5 rounded-lg text-xs font-bold transition-all shrink-0 ${
+                soundEnabled ? 'bg-emerald-100 text-emerald-800' : 'bg-red-600 text-white'
+              }`}
+            >
+              {soundEnabled ? 'Suara Aktif' : 'Aktifkan'}
+            </button>
+          </div>
         </div>
       ) : (
         /* MINIMALIST CUSTOMER TICKET DISPLAY CARD */
@@ -343,21 +389,34 @@ export const CustomerDashboard: React.FC = () => {
 
             {/* Status Statistics */}
             {currentCustomerTicket.status === 'completed' || currentCustomerTicket.status === 'cancelled' ? (
-              <div className="mt-5 p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-3">
-                <div>
+              <div className="mt-5 space-y-3">
+                <div className="p-4 rounded-2xl bg-emerald-50 border border-emerald-200 text-center space-y-2">
                   <p className="font-black text-emerald-900 text-sm">Sesi Foto / Tiket Ini Telah Selesai</p>
-                  <p className="text-xs text-emerald-700 font-medium mt-0.5">
+                  <p className="text-xs text-emerald-700 font-medium">
                     Terima kasih telah mengabadikan momen bersama kami!
                   </p>
+                  <button
+                    type="button"
+                    onClick={handleResetTicket}
+                    className="px-4 py-2 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md active:scale-95 inline-flex items-center gap-1.5"
+                  >
+                    <RefreshCw className="w-3.5 h-3.5 text-red-400" />
+                    <span>Cari / Scan Tiket Lain</span>
+                  </button>
                 </div>
-                <button
-                  type="button"
-                  onClick={handleResetTicket}
-                  className="px-4 py-2.5 bg-slate-900 hover:bg-slate-800 text-white rounded-xl text-xs font-extrabold transition-all shadow-md active:scale-95 inline-flex items-center gap-1.5"
-                >
-                  <RefreshCw className="w-3.5 h-3.5 text-red-400" />
-                  <span>Cari / Scan Tiket Lain</span>
-                </button>
+
+                {/* Live Active Ticket Display for the Booth */}
+                <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 text-center space-y-1">
+                  <span className="text-[10px] font-black text-slate-400 uppercase tracking-widest block">
+                    NOMOR DIPANGGIL DI BOOTH SAAT INI
+                  </span>
+                  <span className="text-3xl sm:text-4xl font-black font-mono text-red-500 block tracking-tight">
+                    {currentCalledTicketInBooth ? currentCalledTicketInBooth.ticketNumber : '---'}
+                  </span>
+                  <span className="text-xs font-semibold text-slate-300 block">
+                    {targetBooth?.name || 'Photobooth Studio'}
+                  </span>
+                </div>
               </div>
             ) : (
               <div className="mt-5 pt-4 border-t border-slate-100 grid grid-cols-2 gap-3 text-center bg-slate-50 p-4 rounded-2xl border border-slate-200/80">
@@ -405,12 +464,12 @@ export const CustomerDashboard: React.FC = () => {
               </div>
               <div className="text-left">
                 <div className="flex items-center gap-1.5">
-                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">Notifikasi Suara HP</h3>
+                  <h3 className="font-extrabold text-slate-900 text-xs sm:text-sm">NOTIFIKASI SUARA</h3>
                 </div>
                 <p className="text-[11px] text-slate-500 font-medium mt-0.5">
                   {soundEnabled
-                    ? 'Suara lonceng aktif saat giliran dipanggil.'
-                    : 'Aktifkan agar HP berbunyi saat giliran tiba.'}
+                    ? 'Suara lonceng & notifikasi aktif di perangkat ini.'
+                    : 'Aktifkan agar perangkat ini berbunyi saat giliran tiba.'}
                 </p>
               </div>
             </div>

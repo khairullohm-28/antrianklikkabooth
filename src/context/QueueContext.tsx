@@ -161,8 +161,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       newScript: AppsScriptConfig,
       newLogs: ActivityLog[],
       newAdminPin: string,
-      activeLastCalled?: Ticket | null,
-      newSoundEnabled?: boolean
+      activeLastCalled?: Ticket | null
     ) => {
       try {
         lastMutationTimeRef.current = Date.now();
@@ -174,10 +173,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             tickets: newTickets,
             printSettings: newPrint,
             appsScriptConfig: newScript,
-            logs: newLogs,
+            logs: (newLogs || []).slice(0, 25),
             adminPin: newAdminPin,
             lastCalledTicket: activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket,
-            soundEnabled: newSoundEnabled !== undefined ? newSoundEnabled : soundEnabled,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }
@@ -186,7 +184,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         console.warn('Firebase save error:', err);
       }
     },
-    [lastCalledTicket, soundEnabled]
+    [lastCalledTicket]
   );
 
   const setSoundEnabled = useCallback(
@@ -198,11 +196,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } catch (e) {
           console.warn('Failed to save sound preference:', e);
         }
-        saveToFirebase(booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, next);
         return next;
       });
     },
-    [booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, saveToFirebase]
+    []
   );
 
   const changeAdminPin = useCallback((newPin: string) => {
@@ -315,7 +312,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     // Initial fetch on mount / enable
     pollAppsScript();
 
-    const interval = setInterval(pollAppsScript, 800);
+    const interval = setInterval(pollAppsScript, 5000);
     return () => clearInterval(interval);
   }, [appsScriptConfig, soundEnabled]);
 
@@ -397,22 +394,16 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           const decodedUrl = decodeURIComponent(gasParam);
           if (decodedUrl && decodedUrl.startsWith('http')) {
-            const newConfig: AppsScriptConfig = {
-              enabled: true,
-              autoSync: true,
-              webAppUrl: decodedUrl,
-              syncStatus: 'idle',
-            };
-            setAppsScriptConfig(newConfig);
-            localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(newConfig));
-
-            // Immediate fetch on mobile when opened via QR code / URL parameter
-            fetchFromGoogleAppsScript(newConfig).then((res) => {
-              if (res.success) {
-                if (Array.isArray(res.tickets)) setTickets(res.tickets);
-                if (Array.isArray(res.booths)) setBooths(res.booths);
-                if (Array.isArray(res.logs)) setLogs(res.logs);
-              }
+            setAppsScriptConfig((prev) => {
+              if (prev.webAppUrl === decodedUrl && prev.enabled) return prev;
+              const newConfig: AppsScriptConfig = {
+                enabled: true,
+                autoSync: true,
+                webAppUrl: decodedUrl,
+                syncStatus: 'idle',
+              };
+              localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(newConfig));
+              return newConfig;
             });
           }
         } catch (e) {
@@ -421,19 +412,24 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       }
 
       if (viewParam && ['admin', 'monitor', 'customer', 'script-guide'].includes(viewParam)) {
-        setActiveTabState(viewParam);
+        setActiveTabState((prev) => (prev === viewParam ? prev : viewParam));
       }
 
       if (ticketParam) {
         const cleanNo = ticketParam.trim().toUpperCase();
         const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
-        if (found) {
-          setSelectedTicketForCustomer(found);
-        } else if (!selectedTicketForCustomer || selectedTicketForCustomer.ticketNumber !== cleanNo) {
+
+        setSelectedTicketForCustomer((prev) => {
+          if (found) {
+            return prev?.id === found.id ? prev : found;
+          }
+          if (prev && prev.ticketNumber.trim().toUpperCase() === cleanNo) {
+            return prev;
+          }
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
           const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
           const seqNum = parseInt(cleanNo.replace(/\D/g, ''), 10) || 1;
-          const virtualTicket: Ticket = {
+          return {
             id: `virtual-${cleanNo}`,
             boothId: matchedBooth ? matchedBooth.id : 'b1',
             boothName: matchedBooth ? matchedBooth.name : 'Photobooth',
@@ -443,22 +439,22 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             status: 'waiting',
             createdAt: new Date().toISOString(),
           };
-          setSelectedTicketForCustomer(virtualTicket);
-        }
-        setActiveTabState('customer');
+        });
+
+        setActiveTabState((prev) => (prev === 'customer' ? prev : 'customer'));
         try {
           localStorage.setItem('photobooth_customer_last_ticket_num', cleanNo);
         } catch (e) {
           console.error(e);
         }
-      } else if (!selectedTicketForCustomer) {
+      } else {
         // Auto-restore last searched ticket if active
         try {
           const savedNo = localStorage.getItem('photobooth_customer_last_ticket_num');
           if (savedNo) {
             const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === savedNo.trim().toUpperCase());
             if (found) {
-              setSelectedTicketForCustomer(found);
+              setSelectedTicketForCustomer((prev) => (prev?.id === found.id ? prev : found));
             }
           }
         } catch (e) {
@@ -472,7 +468,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     return () => {
       window.removeEventListener('popstate', handleUrlChange);
     };
-  }, [tickets, selectedTicketForCustomer]);
+  }, [tickets, booths]);
 
   // Ref to hold latest state for initial seeding without re-subscribing onSnapshot
   const stateRef = useRef({ booths, tickets, printSettings, appsScriptConfig, logs, adminPin, lastCalledTicket, soundEnabled });
@@ -502,37 +498,33 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               lastCalled: data.lastCalledTicket?.ticketNumber || 'None',
             });
             if (Array.isArray(data.booths)) {
-              setBooths(data.booths);
+              setBooths((prev) => (JSON.stringify(prev) === JSON.stringify(data.booths) ? prev : data.booths));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(data.booths)); } catch {}
             }
             if (Array.isArray(data.tickets)) {
-              setTickets(data.tickets);
+              setTickets((prev) => (JSON.stringify(prev) === JSON.stringify(data.tickets) ? prev : data.tickets));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(data.tickets)); } catch {}
             }
             if (data.printSettings) {
               const mergedPrint = { ...DEFAULT_PRINT_SETTINGS, ...data.printSettings };
-              setPrintSettings(mergedPrint);
+              setPrintSettings((prev) => (JSON.stringify(prev) === JSON.stringify(mergedPrint) ? prev : mergedPrint));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(mergedPrint)); } catch {}
             }
             if (data.appsScriptConfig) {
-              setAppsScriptConfig(data.appsScriptConfig);
+              setAppsScriptConfig((prev) => (JSON.stringify(prev) === JSON.stringify(data.appsScriptConfig) ? prev : data.appsScriptConfig));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_SCRIPT, JSON.stringify(data.appsScriptConfig)); } catch {}
             }
             if (Array.isArray(data.logs)) {
-              setLogs(data.logs);
+              setLogs((prev) => (JSON.stringify(prev) === JSON.stringify(data.logs) ? prev : data.logs));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(data.logs)); } catch {}
             }
             if (data.adminPin && typeof data.adminPin === 'string') {
-              setAdminPin(data.adminPin);
+              setAdminPin((prev) => (prev === data.adminPin ? prev : data.adminPin));
               try { localStorage.setItem('photobooth_admin_pin', data.adminPin); } catch {}
-            }
-            if (data.soundEnabled !== undefined && typeof data.soundEnabled === 'boolean') {
-              setSoundEnabledState(data.soundEnabled);
-              try { localStorage.setItem('photobooth_sound_enabled', JSON.stringify(data.soundEnabled)); } catch {}
             }
             if (data.lastCalledTicket !== undefined) {
               const nextLast = data.lastCalledTicket as Ticket | null;
-              setLastCalledTicket(nextLast);
+              setLastCalledTicket((prev) => (JSON.stringify(prev) === JSON.stringify(nextLast) ? prev : nextLast));
               if (nextLast) {
                 try { localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(nextLast)); } catch {}
               } else {
@@ -543,7 +535,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         } else {
           // Document does not exist yet on Firestore -> Seed initial state
           const s = stateRef.current;
-          saveToFirebase(s.booths, s.tickets, s.printSettings, s.appsScriptConfig, s.logs, s.adminPin, s.lastCalledTicket, s.soundEnabled);
+          saveToFirebase(s.booths, s.tickets, s.printSettings, s.appsScriptConfig, s.logs, s.adminPin, s.lastCalledTicket);
         }
       },
       (error) => {
@@ -685,7 +677,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       console.log(`[QueueTrace CALL_NEXT] Calling ticket ${ticketToCall.ticketNumber} for booth ${booth.name}`);
 
       const updatedTickets = tickets.map((t) => {
-        if (t.boothId === boothId && t.status === 'called') {
+        if (t.boothId === boothId && (t.status === 'called' || (t.status as string) === 'serving')) {
           return {
             ...t,
             status: 'completed' as const,
@@ -807,7 +799,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       const nowIso = new Date().toISOString();
       const updatedTickets = tickets.map((t) => {
-        if (t.boothId === ticket.boothId && t.status === 'called' && t.id !== ticketId) {
+        if (t.boothId === ticket.boothId && (t.status === 'called' || (t.status as string) === 'serving') && t.id !== ticketId) {
           return { ...t, status: 'completed' as const, completedAt: nowIso };
         }
         if (t.id === ticketId) {
