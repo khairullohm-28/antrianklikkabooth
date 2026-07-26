@@ -20,6 +20,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   printSettings: propPrintSettings,
   estimatedWaitMinutes,
   id = 'printable-thermal-ticket',
+  isPrintMode = false,
 }) => {
   const { printSettings: contextSettings, appsScriptConfig } = useQueue();
   const settings = propSettings || propPrintSettings || contextSettings || {};
@@ -157,7 +158,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
       id={id}
       className={`bg-white text-slate-900 ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-between transition-all overflow-hidden box-border`}
       style={{
-        width: spec.widthPx,
+        width: isPrintMode ? '100%' : spec.widthPx,
         height: spec.heightPx !== 'auto' ? spec.heightPx : 'auto',
         minHeight: spec.heightPx !== 'auto' ? spec.heightPx : 'auto',
         maxHeight: spec.heightPx !== 'auto' ? spec.heightPx : 'none',
@@ -215,7 +216,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
         )}
 
         {/* ESTIMATED WAIT TIME */}
-        {settings.showEstimatedWait !== false && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
+        {Boolean(settings.showEstimatedWait) && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
           <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
             Estimasi: ~{estimatedWaitMinutes} mnt
           </div>

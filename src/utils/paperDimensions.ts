@@ -380,21 +380,17 @@ export const getPaperDimensionSpec = (
   spec.orientation = orientation;
   if (spec.heightMm !== null) {
     if (orientation === 'landscape') {
-      spec.pageSizeCss = `${spec.heightMm}mm ${spec.widthMm}mm landscape`;
+      spec.pageSizeCss = `${spec.heightMm}mm ${spec.widthMm}mm`;
       // Swap width/height for display preview box if landscape
       const tempW = spec.widthPx;
       spec.widthPx = spec.heightPx !== 'auto' ? spec.heightPx : '280px';
       spec.heightPx = tempW;
     } else {
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm portrait`;
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm`;
     }
   } else {
     // For continuous roll paper (58mm, 80mm)
-    if (orientation === 'landscape') {
-      spec.pageSizeCss = `${spec.widthMm}mm auto landscape`;
-    } else {
-      spec.pageSizeCss = `${spec.widthMm}mm auto portrait`;
-    }
+    spec.pageSizeCss = `${spec.widthMm}mm auto`;
   }
 
   return spec;

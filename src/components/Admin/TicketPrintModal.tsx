@@ -1,4 +1,5 @@
 import React from 'react';
+import ReactDOM from 'react-dom';
 import { useQueue } from '../../context/QueueContext';
 import { TicketReceiptView } from './TicketReceiptView';
 import { Printer, X, Share2 } from 'lucide-react';
@@ -66,109 +67,127 @@ export const TicketPrintModal: React.FC = () => {
   };
 
   return (
-    <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn">
-      <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
-        {/* Modal Header */}
-        <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
-          <div className="flex items-center gap-2">
-            <Printer className="w-5 h-5 text-red-500" />
-            <h3 className="font-extrabold text-base">Tiket Antrian Berhasil Dicetak</h3>
-          </div>
-          <button
-            id="btn-close-print-modal"
-            onClick={() => setIsPrintModalOpen(false)}
-            className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
-          >
-            <X className="w-5 h-5" />
-          </button>
-        </div>
-
-        {/* Receipt Container Preview */}
-        <div className="p-6 bg-slate-100 overflow-y-auto flex justify-center items-center">
-          <TicketReceiptView
-            ticket={activeTicketToPrint}
-            settings={printSettings}
-            estimatedWaitMinutes={estimatedWaitMinutes}
-            id="printable-thermal-ticket"
-            isPrintMode={true}
-          />
-        </div>
-
-        {/* Modal Actions */}
-        <div className="p-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
-          <button
-            id="btn-copy-ticket-link"
-            onClick={handleCopyLink}
-            className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
-          >
-            <Share2 className="w-4 h-4 text-slate-500" />
-            {copied ? 'Link Tersalin!' : 'Salin Link QR'}
-          </button>
-
-          <div className="flex items-center gap-2 w-full sm:w-auto">
+    <>
+      {/* Screen Modal Overlay */}
+      <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-slate-900/70 backdrop-blur-sm animate-fadeIn print:hidden">
+        <div className="bg-white rounded-2xl shadow-2xl max-w-md w-full overflow-hidden border border-slate-100 flex flex-col max-h-[90vh]">
+          {/* Modal Header */}
+          <div className="p-4 bg-slate-900 text-white flex items-center justify-between">
+            <div className="flex items-center gap-2">
+              <Printer className="w-5 h-5 text-red-500" />
+              <h3 className="font-extrabold text-base">Tiket Antrian Berhasil Dicetak</h3>
+            </div>
             <button
-              id="btn-close-ticket-modal"
+              id="btn-close-print-modal"
               onClick={() => setIsPrintModalOpen(false)}
-              className="px-4 py-2.5 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold text-xs transition-colors"
+              className="p-1 rounded-lg text-slate-400 hover:text-white hover:bg-slate-800 transition-colors"
             >
-              Tutup
+              <X className="w-5 h-5" />
             </button>
+          </div>
+
+          {/* Receipt Container Preview */}
+          <div className="p-6 bg-slate-100 overflow-y-auto flex justify-center items-center">
+            <TicketReceiptView
+              ticket={activeTicketToPrint}
+              settings={printSettings}
+              estimatedWaitMinutes={estimatedWaitMinutes}
+              id="preview-thermal-ticket"
+              isPrintMode={false}
+            />
+          </div>
+
+          {/* Modal Actions */}
+          <div className="p-4 bg-white border-t border-slate-100 flex flex-col sm:flex-row items-center justify-between gap-2">
             <button
-              id="btn-trigger-browser-print"
-              onClick={handlePrint}
-              disabled={isPrinting}
-              className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50"
+              id="btn-copy-ticket-link"
+              onClick={handleCopyLink}
+              className="w-full sm:w-auto px-4 py-2.5 rounded-xl border border-slate-200 text-slate-700 hover:bg-slate-50 font-semibold text-xs flex items-center justify-center gap-2 transition-colors"
             >
-              <Printer className="w-4 h-4" />
-              {isPrinting ? 'Menyiapkan Cetak...' : 'Cetak Sekarang'}
+              <Share2 className="w-4 h-4 text-slate-500" />
+              {copied ? 'Link Tersalin!' : 'Salin Link QR'}
             </button>
+
+            <div className="flex items-center gap-2 w-full sm:w-auto">
+              <button
+                id="btn-close-ticket-modal"
+                onClick={() => setIsPrintModalOpen(false)}
+                className="px-4 py-2.5 rounded-xl text-slate-500 hover:bg-slate-100 font-semibold text-xs transition-colors"
+              >
+                Tutup
+              </button>
+              <button
+                id="btn-trigger-browser-print"
+                onClick={handlePrint}
+                disabled={isPrinting}
+                className="flex-1 sm:flex-initial px-5 py-2.5 rounded-xl bg-red-600 hover:bg-red-700 text-white font-bold text-xs flex items-center justify-center gap-2 shadow-lg shadow-red-600/20 transition-all disabled:opacity-50"
+              >
+                <Printer className="w-4 h-4" />
+                {isPrinting ? 'Menyiapkan Cetak...' : 'Cetak Sekarang'}
+              </button>
+            </div>
           </div>
         </div>
       </div>
 
-      {/* Dynamic Thermal Label Print CSS Injection */}
-      <style>{`
-        @media print {
-          @page {
-            size: ${spec.pageSizeCss};
-            margin: 0 !important;
-          }
-          html, body {
-            margin: 0 !important;
-            padding: 0 !important;
-            background: #ffffff !important;
-            width: ${spec.widthMm}mm !important;
-            height: auto !important;
-            overflow: hidden !important;
-          }
-          body * {
-            visibility: hidden !important;
-          }
-          #printable-thermal-ticket, #printable-thermal-ticket * {
-            visibility: visible !important;
-          }
-          #printable-thermal-ticket {
-            position: absolute !important;
-            top: 0 !important;
-            left: 0 !important;
-            width: 100% !important;
-            max-width: ${spec.widthMm}mm !important;
-            ${spec.heightMm ? `height: ${spec.heightMm}mm !important; max-height: ${spec.heightMm}mm !important;` : 'height: auto !important;'}
-            padding: ${spec.printPaddingCss} !important;
-            margin: 0 !important;
-            box-shadow: none !important;
-            border: none !important;
-            box-sizing: border-box !important;
-            page-break-after: avoid !important;
-            page-break-before: avoid !important;
-            page-break-inside: avoid !important;
-            break-after: avoid !important;
-            break-inside: avoid !important;
-            background: #ffffff !important;
-            color: #000000 !important;
-          }
-        }
-      `}</style>
-    </div>
+      {/* Printable DOM Portal (Direct child of body) */}
+      {typeof document !== 'undefined' &&
+        ReactDOM.createPortal(
+          <div id="thermal-print-portal" className="hidden print:block">
+            <TicketReceiptView
+              ticket={activeTicketToPrint}
+              settings={printSettings}
+              estimatedWaitMinutes={estimatedWaitMinutes}
+              id="printable-thermal-ticket"
+              isPrintMode={true}
+            />
+            <style>{`
+              @media print {
+                @page {
+                  size: ${spec.pageSizeCss};
+                  margin: 0 !important;
+                }
+                html, body {
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #ffffff !important;
+                  width: 100% !important;
+                  height: auto !important;
+                  overflow: visible !important;
+                }
+                body > *:not(#thermal-print-portal) {
+                  display: none !important;
+                }
+                #thermal-print-portal {
+                  display: block !important;
+                  position: absolute !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  width: ${spec.widthMm}mm !important;
+                  max-width: ${spec.widthMm}mm !important;
+                  margin: 0 !important;
+                  padding: 0 !important;
+                  background: #ffffff !important;
+                }
+                #printable-thermal-ticket {
+                  width: 100% !important;
+                  max-width: ${spec.widthMm}mm !important;
+                  margin: 0 auto !important;
+                  padding: ${spec.printPaddingCss} !important;
+                  box-sizing: border-box !important;
+                  background: #ffffff !important;
+                  color: #000000 !important;
+                  page-break-after: avoid !important;
+                  page-break-before: avoid !important;
+                  page-break-inside: avoid !important;
+                  break-after: avoid !important;
+                  break-inside: avoid !important;
+                }
+              }
+            `}</style>
+          </div>,
+          document.body
+        )}
+    </>
   );
 };
