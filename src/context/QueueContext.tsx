@@ -280,13 +280,13 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
       if (ticketParam) {
         const cleanNo = ticketParam.trim().toUpperCase();
-        const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === cleanNo);
+        const found = tickets.find((t) => (t.ticketNumber || '').toString().trim().toUpperCase() === cleanNo);
 
         setSelectedTicketForCustomer((prev) => {
           if (found) {
             return prev?.id === found.id ? prev : found;
           }
-          if (prev && prev.ticketNumber.trim().toUpperCase() === cleanNo) {
+          if (prev && (prev.ticketNumber || '').toString().trim().toUpperCase() === cleanNo) {
             return prev;
           }
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
@@ -315,7 +315,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         try {
           const savedNo = localStorage.getItem('photobooth_customer_last_ticket_num');
           if (savedNo) {
-            const found = tickets.find((t) => t.ticketNumber.trim().toUpperCase() === savedNo.trim().toUpperCase());
+            const found = tickets.find((t) => (t.ticketNumber || '').toString().trim().toUpperCase() === savedNo.trim().toUpperCase());
             if (found) {
               setSelectedTicketForCustomer((prev) => (prev?.id === found.id ? prev : found));
             }

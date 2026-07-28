@@ -122,4 +122,66 @@ export interface ActivityLog {
   ticketNumber?: string;
 }
 
-export type ActiveTab = 'admin' | 'monitor' | 'customer';
+export type MemberTier = 'Bronze' | 'Gold' | 'Diamond';
+
+export interface Member {
+  id: string;
+  name: string;
+  phone: string;
+  pin: string;
+  points: number;
+  stamps: number;
+  tier: MemberTier;
+  dob: string; // e.g. "1998-05-15"
+  address: string;
+  avatarUrl: string;
+  isFirstLogin: boolean;
+  createdAt: string; // ISO string
+  status: 'Aktif' | 'Nonaktif';
+}
+
+export type PromoType = 'POINT_DISCOUNT' | 'STAMP_PRODUCT' | 'EVENT';
+
+export interface Promo {
+  id: string;
+  title: string;
+  description: string;
+  bannerUrl: string;
+  type: PromoType;
+  costPoints: number;
+  costStamps: number;
+  isActive: boolean;
+}
+
+export type MemberHistoryType = 'PURCHASE' | 'REDEEM_POINT' | 'REDEEM_STAMP';
+
+export interface MemberHistory {
+  id: string;
+  memberId: string;
+  memberName?: string;
+  date: string; // ISO string or formatted date
+  transactionId?: string;
+  type: MemberHistoryType;
+  details: string;
+  pointsChange: number;
+  stampsChange: number;
+  amount?: number;
+}
+
+export interface LoyaltySettings {
+  spendPerPoint: number; // e.g., 10000 -> Rp 10.000 = 1 point
+  spendPerStamp: number; // e.g., 50000 -> Rp 50.000 = 1 stamp
+  goldThresholdPoints: number; // e.g., 100 points -> Gold
+  diamondThresholdPoints: number; // e.g., 500 points -> Diamond
+  tierBenefits: {
+    bronze: string;
+    gold: string;
+    diamond: string;
+    bronzeMin: string;
+    goldMin: string;
+    diamondMin: string;
+  };
+}
+
+export type ActiveTab = 'admin' | 'monitor' | 'customer' | 'member';
+

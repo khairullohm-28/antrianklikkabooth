@@ -1,6 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../../context/QueueContext';
 import { BoothCard } from '../BoothCard';
+import { OperationalMemberSearch } from '../OperationalMemberSearch';
+import { Member, LoyaltySettings } from '../../../types';
+import { subscribeMembers, subscribeLoyaltySettings, DEFAULT_LOYALTY_SETTINGS } from '../../../services/memberService';
 import { Booth } from '../../../types';
 import {
   Users,
@@ -25,6 +28,19 @@ export const OperasionalView: React.FC<OperasionalViewProps> = ({
 }) => {
   const { booths, tickets, logs, clearTodayLogs } = useQueue();
 
+  // Realtime Members and Loyalty Settings
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>(DEFAULT_LOYALTY_SETTINGS);
+
+  useEffect(() => {
+    const unsubMembers = subscribeMembers((list) => setMembers(list));
+    const unsubSettings = subscribeLoyaltySettings((settings) => setLoyaltySettings(settings));
+    return () => {
+      unsubMembers();
+      unsubSettings();
+    };
+  }, []);
+
   // Quick Stats
   const totalWaiting = tickets.filter((t) => t.status === 'waiting').length;
   const totalCalled = tickets.filter((t) => t.status === 'called' || t.status === 'completed').length;
@@ -36,7 +52,7 @@ export const OperasionalView: React.FC<OperasionalViewProps> = ({
       <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl border border-slate-800 flex items-center justify-between">
         <div>
           <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Panel Kontrol
+            Panel Kontrol Operasional
           </h1>
         </div>
       </div>
@@ -83,6 +99,12 @@ export const OperasionalView: React.FC<OperasionalViewProps> = ({
           </div>
         </div>
       </div>
+
+      {/* OPERATIONAL MEMBER LOYALTY SEARCH & ADD MEMBER (PLACED ABOVE BOOTH QUEUE COLUMNS) */}
+      <OperationalMemberSearch
+        members={members}
+        loyaltySettings={loyaltySettings}
+      />
 
       {/* BOOTH QUEUE COLUMNS GRID */}
       <div>

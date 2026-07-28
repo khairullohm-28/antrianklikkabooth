@@ -3,12 +3,13 @@ import { QueueProvider, useQueue } from './context/QueueContext';
 import { AdminDashboard } from './components/Admin/AdminDashboard';
 import { CustomerDashboard } from './components/Customer/CustomerDashboard';
 import { MonitorDashboard } from './components/Monitor/MonitorDashboard';
-import { LayoutDashboard, Tv, UserCheck } from 'lucide-react';
+import { MemberContainer } from './components/Member/MemberContainer';
+import { LayoutDashboard, Tv, UserCheck, Crown } from 'lucide-react';
 
 const MainContent: React.FC = () => {
   const { activeTab, setActiveTab, isAdminLoggedIn } = useQueue();
 
-  const isPublicDashboard = activeTab === 'customer' || activeTab === 'monitor';
+  const isPublicDashboard = activeTab === 'customer' || activeTab === 'monitor' || activeTab === 'member';
   const isMonitorMode = activeTab === 'monitor';
 
   if (isMonitorMode) {
@@ -39,10 +40,11 @@ const MainContent: React.FC = () => {
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           {activeTab === 'admin' && <AdminDashboard />}
           {activeTab === 'customer' && <CustomerDashboard />}
+          {activeTab === 'member' && <MemberContainer />}
         </main>
       </div>
 
-      {/* Return Button for Logged In Admin Only on Customer View */}
+      {/* Return Button for Logged In Admin Only on Public Views */}
       {isPublicDashboard && isAdminLoggedIn && (
         <div className="fixed bottom-3 right-3 z-40 print:hidden">
           <button
@@ -62,10 +64,10 @@ const MainContent: React.FC = () => {
           <div className="max-w-7xl mx-auto px-4 flex flex-col sm:flex-row items-center justify-between gap-3">
             <p className="font-medium text-slate-500">© 2026 Photobooth Studio. Dedicated Photobooth Queue System.</p>
 
-            <div className="flex items-center gap-3 font-bold text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-2xl border border-slate-200">
+            <div className="flex items-center gap-2 font-bold text-slate-600 bg-slate-100/80 px-3 py-1.5 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
               <button
                 onClick={() => setActiveTab('admin')}
-                className={`hover:text-red-600 px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'admin' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
                 }`}
               >
@@ -74,16 +76,27 @@ const MainContent: React.FC = () => {
               </button>
               <button
                 onClick={() => setActiveTab('customer')}
-                className={`hover:text-red-600 px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'customer' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
                 }`}
               >
                 <UserCheck className="w-3.5 h-3.5" />
                 <span>Pengguna</span>
               </button>
+
+              <button
+                onClick={() => setActiveTab('member')}
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'member' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                <span>Portal Member</span>
+              </button>
+
               <button
                 onClick={() => setActiveTab('monitor')}
-                className={`hover:text-red-600 px-2 py-1 rounded-xl transition-all flex items-center gap-1.5 ${
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
                   activeTab === 'monitor' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
                 }`}
               >

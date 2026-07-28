@@ -150,8 +150,8 @@ export const CustomerDashboard: React.FC = () => {
         (currentCustomerTicket.status as string) === 'serving' ||
         (lastCalledTicket &&
           (lastCalledTicket.id === currentCustomerTicket.id ||
-            lastCalledTicket.ticketNumber.trim().toUpperCase() ===
-              currentCustomerTicket.ticketNumber.trim().toUpperCase())))
+            (lastCalledTicket.ticketNumber || '').toString().trim().toUpperCase() ===
+              (currentCustomerTicket.ticketNumber || '').toString().trim().toUpperCase())))
   );
 
   // Trigger celebration, popup modal & chime whenever ticket is called
@@ -213,7 +213,7 @@ export const CustomerDashboard: React.FC = () => {
 
     const cleanInput = inputTicket.trim().toUpperCase();
     const found = tickets.find(
-      (t) => t.ticketNumber.trim().toUpperCase() === cleanInput
+      (t) => (t.ticketNumber || '').toString().trim().toUpperCase() === cleanInput
     );
 
     if (found) {

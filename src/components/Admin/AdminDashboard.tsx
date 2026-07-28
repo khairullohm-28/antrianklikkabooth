@@ -1,11 +1,12 @@
-import React, { useState } from 'react';
+import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../context/QueueContext';
 import { AdminLogin } from './AdminLogin';
 import { SettingsModal } from './SettingsModal';
 import { TicketPrintModal } from './TicketPrintModal';
 import { AdminSidebar } from './AdminSidebar';
 import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
-import { Booth } from '../../types';
+import { Booth, Member, LoyaltySettings } from '../../types';
+import { subscribeMembers, subscribeLoyaltySettings, DEFAULT_LOYALTY_SETTINGS } from '../../services/memberService';
 
 // Views
 import { BerandaView } from './views/BerandaView';
@@ -14,6 +15,13 @@ import { ManajemenView } from './views/ManajemenView';
 import { MediaDisplayView } from './views/MediaDisplayView';
 import { SettingView } from './views/SettingView';
 import { LaporanView } from './views/LaporanView';
+import { SystemSettingView } from './views/SystemSettingView';
+
+// Master Data Views
+import { MemberMasterView } from './views/MemberMasterView';
+import { TransaksiMasterView } from './views/TransaksiMasterView';
+import { LaporanMasterView } from './views/LaporanMasterView';
+import { SettingMasterView } from './views/SettingMasterView';
 
 import {
   Menu,
@@ -27,10 +35,28 @@ export type AdminTab =
   | 'manajemen'
   | 'media_display'
   | 'setting'
-  | 'laporan';
+  | 'laporan'
+  | 'master_member'
+  | 'master_transaksi'
+  | 'master_laporan'
+  | 'master_setting'
+  | 'system_setting';
 
 export const AdminDashboard: React.FC = () => {
   const { isAdminLoggedIn, logoutAdmin, printSettings } = useQueue();
+
+  // Realtime Members & Loyalty Settings State for Master Views
+  const [members, setMembers] = useState<Member[]>([]);
+  const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>(DEFAULT_LOYALTY_SETTINGS);
+
+  useEffect(() => {
+    const unsubMembers = subscribeMembers((list) => setMembers(list));
+    const unsubSettings = subscribeLoyaltySettings((s) => setLoyaltySettings(s));
+    return () => {
+      unsubMembers();
+      unsubSettings();
+    };
+  }, []);
 
   const [activeTab, setActiveTab] = useState<AdminTab>(() => {
     try {
@@ -40,7 +66,7 @@ export const AdminDashboard: React.FC = () => {
         const urlTab = params.get('tab');
         if (
           urlTab &&
-          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(urlTab)
+          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan', 'master_member', 'master_transaksi', 'master_laporan', 'master_setting', 'system_setting'].includes(urlTab)
         ) {
           return urlTab as AdminTab;
         }
@@ -51,7 +77,7 @@ export const AdminDashboard: React.FC = () => {
           localStorage.getItem('photobooth_admin_active_tab');
         if (
           saved &&
-          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan'].includes(saved)
+          ['beranda', 'operasional', 'manajemen', 'media_display', 'setting', 'laporan', 'master_member', 'master_transaksi', 'master_laporan', 'master_setting', 'system_setting'].includes(saved)
         ) {
           return saved as AdminTab;
         }
@@ -155,6 +181,15 @@ export const AdminDashboard: React.FC = () => {
         {activeTab === 'media_display' && <MediaDisplayView />}
         {activeTab === 'setting' && <SettingView />}
         {activeTab === 'laporan' && <LaporanView />}
+
+        {/* MASTER DATA LOYALTY VIEWS */}
+        {activeTab === 'master_member' && <MemberMasterView members={members} />}
+        {activeTab === 'master_transaksi' && <TransaksiMasterView />}
+        {activeTab === 'master_laporan' && <LaporanMasterView members={members} />}
+        {activeTab === 'master_setting' && <SettingMasterView members={members} loyaltySettings={loyaltySettings} />}
+
+        {/* SYSTEM SETTINGS VIEW */}
+        {activeTab === 'system_setting' && <SystemSettingView />}
       </main>
 
       {/* Legacy Settings Modal Bridge if needed */}

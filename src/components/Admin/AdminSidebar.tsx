@@ -1,16 +1,21 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import {
   LayoutDashboard,
   PlaySquare,
   Layers,
   Tv,
-  Settings,
+  Printer,
   FileSpreadsheet,
+  Settings,
+  UserCheck,
+  History,
+  FileText,
+  Sliders,
   LogOut,
-  ShieldCheck,
   Camera,
   ChevronLeft,
   ChevronRight,
+  ChevronDown,
 } from 'lucide-react';
 import { AdminTab } from './AdminDashboard';
 import { ConnectionStatusBadge } from '../ConnectionStatusBadge';
@@ -26,38 +31,109 @@ interface AdminSidebarProps {
   logoUrl?: string;
 }
 
-export const navItems = [
+export interface NavGroup {
+  id: string;
+  groupTitle?: string;
+  dotColor?: string;
+  collapsible?: boolean;
+  items: {
+    id: AdminTab;
+    label: string;
+    icon: React.ComponentType<{ className?: string }>;
+  }[];
+}
+
+export const navGroups: NavGroup[] = [
   {
-    id: 'beranda' as AdminTab,
-    label: 'BERANDA',
-    icon: LayoutDashboard,
+    id: 'utama',
+    groupTitle: 'UTAMA',
+    dotColor: 'bg-slate-400',
+    collapsible: false,
+    items: [
+      {
+        id: 'beranda' as AdminTab,
+        label: 'BERANDA',
+        icon: LayoutDashboard,
+      },
+      {
+        id: 'operasional' as AdminTab,
+        label: 'OPERASIONAL',
+        icon: PlaySquare,
+      },
+    ],
   },
   {
-    id: 'operasional' as AdminTab,
-    label: 'OPERASIONAL',
-    icon: PlaySquare,
+    id: 'operasional_antrian',
+    groupTitle: 'OPERASIONAL & ANTRIAN',
+    dotColor: 'bg-emerald-500',
+    collapsible: true,
+    items: [
+      {
+        id: 'manajemen' as AdminTab,
+        label: 'MANAJEMEN BOOTH',
+        icon: Layers,
+      },
+      {
+        id: 'media_display' as AdminTab,
+        label: 'MEDIA DISPLAY',
+        icon: Tv,
+      },
+      {
+        id: 'setting' as AdminTab,
+        label: 'CUSTOM TICKET DESIGNER',
+        icon: Printer,
+      },
+      {
+        id: 'laporan' as AdminTab,
+        label: 'LAPORAN & ANALISIS ANTRIAN',
+        icon: FileSpreadsheet,
+      },
+    ],
   },
   {
-    id: 'manajemen' as AdminTab,
-    label: 'MANAJEMEN',
-    icon: Layers,
+    id: 'member_loyalitas',
+    groupTitle: 'MEMBER LOYALITAS',
+    dotColor: 'bg-amber-400',
+    collapsible: true,
+    items: [
+      {
+        id: 'master_member' as AdminTab,
+        label: 'MEMBER LOYALITAS',
+        icon: UserCheck,
+      },
+      {
+        id: 'master_transaksi' as AdminTab,
+        label: 'TRANSAKSI MEMBER',
+        icon: History,
+      },
+      {
+        id: 'master_laporan' as AdminTab,
+        label: 'LAPORAN ANALISIS MEMBER',
+        icon: FileText,
+      },
+      {
+        id: 'master_setting' as AdminTab,
+        label: 'SETTING MEMBER',
+        icon: Sliders,
+      },
+    ],
   },
   {
-    id: 'media_display' as AdminTab,
-    label: 'MEDIA DISPLAY',
-    icon: Tv,
-  },
-  {
-    id: 'setting' as AdminTab,
-    label: 'SETTING',
-    icon: Settings,
-  },
-  {
-    id: 'laporan' as AdminTab,
-    label: 'LAPORAN & ANALISIS',
-    icon: FileSpreadsheet,
+    id: 'sistem',
+    groupTitle: 'SISTEM',
+    dotColor: 'bg-red-500',
+    collapsible: false,
+    items: [
+      {
+        id: 'system_setting' as AdminTab,
+        label: 'SETTING SISTEM',
+        icon: Settings,
+      },
+    ],
   },
 ];
+
+export const navItems = navGroups.flatMap((g) => g.items);
 
 export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   activeTab,
@@ -69,6 +145,24 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
   logoutAdmin,
   logoUrl,
 }) => {
+  const [openGroups, setOpenGroups] = useState<Record<string, boolean>>({
+    utama: true,
+    operasional_antrian: true,
+    member_loyalitas: true,
+    sistem: true,
+  });
+
+  useEffect(() => {
+    const activeGroup = navGroups.find((g) => g.items.some((item) => item.id === activeTab));
+    if (activeGroup && !openGroups[activeGroup.id]) {
+      setOpenGroups((prev) => ({ ...prev, [activeGroup.id]: true }));
+    }
+  }, [activeTab]);
+
+  const toggleGroup = (groupId: string) => {
+    setOpenGroups((prev) => ({ ...prev, [groupId]: !prev[groupId] }));
+  };
+
   return (
     <>
       {/* MOBILE BACKDROP DRAWER */}
@@ -128,45 +222,88 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
           </button>
         </div>
 
-        {/* SIDEBAR MENU ITEMS */}
-        <div className="p-2 space-y-1 overflow-y-auto flex-1">
-          {!isSidebarCollapsed && (
-            <span className="text-[10px] font-extrabold text-slate-400 uppercase tracking-wider px-3 py-1.5 block">
-              Menu Utama
-            </span>
-          )}
-
-          {navItems.map((item) => {
-            const Icon = item.icon;
-            const isActive = activeTab === item.id;
+        {/* SIDEBAR MENU GROUPS */}
+        <div className="p-2 space-y-2.5 overflow-y-auto flex-1">
+          {navGroups.map((group) => {
+            const isGroupOpen = openGroups[group.id] ?? true;
+            const hasActiveChild = group.items.some((item) => item.id === activeTab);
 
             return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveTab(item.id);
-                  setIsMobileSidebarOpen(false);
-                }}
-                title={isSidebarCollapsed ? item.label : undefined}
-                className={`w-full p-2.5 rounded-2xl text-left transition-all flex items-center gap-3 group active:scale-95 ${
-                  isSidebarCollapsed ? 'justify-center' : ''
-                } ${
-                  isActive
-                    ? 'bg-red-600 text-white font-black shadow-lg shadow-red-600/25 border border-red-500/50'
-                    : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-bold'
-                }`}
-              >
-                <div
-                  className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
-                    isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-red-400'
-                  }`}
-                >
-                  <Icon className="w-4 h-4" />
-                </div>
-                {!isSidebarCollapsed && (
-                  <span className="text-xs font-black tracking-wide truncate">{item.label}</span>
+              <div key={group.id} className="space-y-1">
+                {!isSidebarCollapsed && group.groupTitle && (
+                  <div>
+                    {group.collapsible ? (
+                      <button
+                        onClick={() => toggleGroup(group.id)}
+                        className={`w-full flex items-center justify-between px-3 pt-2 pb-1 rounded-xl transition-all group/header ${
+                          hasActiveChild ? 'text-white font-extrabold' : 'text-slate-400 hover:text-white font-bold'
+                        }`}
+                      >
+                        <div className="flex items-center gap-2 overflow-hidden">
+                          <span className={`w-2 h-2 rounded-full ${group.dotColor || 'bg-slate-500'} shrink-0`} />
+                          <span className="text-[10px] font-black uppercase tracking-wider block truncate text-slate-300 group-hover/header:text-white">
+                            {group.groupTitle}
+                          </span>
+                        </div>
+                        <ChevronDown
+                          className={`w-3.5 h-3.5 text-slate-400 group-hover/header:text-white transition-transform duration-200 shrink-0 ${
+                            isGroupOpen ? 'rotate-180' : ''
+                          }`}
+                        />
+                      </button>
+                    ) : (
+                      <div className="flex items-center gap-2 px-3 pt-2 pb-1">
+                        <span className={`w-2 h-2 rounded-full ${group.dotColor || 'bg-slate-500'} shrink-0`} />
+                        <span className="text-[10px] font-black text-slate-400 uppercase tracking-wider block truncate">
+                          {group.groupTitle}
+                        </span>
+                      </div>
+                    )}
+                  </div>
                 )}
-              </button>
+
+                {isSidebarCollapsed && (
+                  <div className="my-1 border-t border-slate-800/80 mx-2" />
+                )}
+
+                {(isGroupOpen || isSidebarCollapsed || !group.collapsible) && (
+                  <div className="space-y-0.5">
+                    {group.items.map((item) => {
+                      const Icon = item.icon;
+                      const isActive = activeTab === item.id;
+
+                      return (
+                        <button
+                          key={item.id}
+                          onClick={() => {
+                            setActiveTab(item.id);
+                            setIsMobileSidebarOpen(false);
+                          }}
+                          title={isSidebarCollapsed ? item.label : undefined}
+                          className={`w-full p-2.5 rounded-2xl text-left transition-all flex items-center gap-3 group active:scale-95 ${
+                            isSidebarCollapsed ? 'justify-center' : ''
+                          } ${
+                            isActive
+                              ? 'bg-red-600 text-white font-black shadow-lg shadow-red-600/25 border border-red-500/50'
+                              : 'text-slate-300 hover:bg-slate-800/80 hover:text-white font-bold'
+                          }`}
+                        >
+                          <div
+                            className={`w-8 h-8 rounded-xl flex items-center justify-center transition-colors shrink-0 ${
+                              isActive ? 'bg-white/20 text-white' : 'bg-slate-800 text-slate-400 group-hover:text-red-400'
+                            }`}
+                          >
+                            <Icon className="w-4 h-4" />
+                          </div>
+                          {!isSidebarCollapsed && (
+                            <span className="text-xs font-black tracking-wide truncate uppercase">{item.label}</span>
+                          )}
+                        </button>
+                      );
+                    })}
+                  </div>
+                )}
+              </div>
             );
           })}
         </div>
