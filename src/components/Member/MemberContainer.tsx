@@ -14,25 +14,36 @@ export const MemberContainer: React.FC = () => {
   const [promos, setPromos] = useState<Promo[]>([]);
   const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>(DEFAULT_LOYALTY_SETTINGS);
 
-  // Active Logged-in Member State
+  // Active Logged-in Member State (Persisted across sessions via localStorage & sessionStorage)
   const [currentMember, setCurrentMember] = useState<Member | null>(() => {
     try {
-      const saved = sessionStorage.getItem('photobooth_logged_member');
+      const saved = localStorage.getItem('photobooth_logged_member') || sessionStorage.getItem('photobooth_logged_member');
       return saved ? JSON.parse(saved) : null;
     } catch {
       return null;
     }
   });
 
-  // Subscribe to Firestore collections
+  // Subscribe to Firestore collections & update member in real-time
   useEffect(() => {
     const unsubMembers = subscribeMembers((list) => {
       setMembers(list);
-      // Keep currentMember updated with Firestore realtime changes
-      if (currentMember) {
-        const updated = list.find((m) => m.id === currentMember.id);
+
+      // Restore/Sync active member session with latest Firestore data
+      const savedRaw = localStorage.getItem('photobooth_logged_member') || sessionStorage.getItem('photobooth_logged_member');
+      let targetMemberId = currentMember?.id;
+      if (!targetMemberId && savedRaw) {
+        try {
+          const parsed = JSON.parse(savedRaw);
+          targetMemberId = parsed?.id;
+        } catch {}
+      }
+
+      if (targetMemberId) {
+        const updated = list.find((m) => m.id === targetMemberId);
         if (updated) {
           setCurrentMember(updated);
+          localStorage.setItem('photobooth_logged_member', JSON.stringify(updated));
           sessionStorage.setItem('photobooth_logged_member', JSON.stringify(updated));
         }
       }
@@ -46,20 +57,23 @@ export const MemberContainer: React.FC = () => {
       unsubPromos();
       unsubSettings();
     };
-  }, [currentMember?.id]);
+  }, []); // Run once on mount
 
   const handleMemberLoginSuccess = (member: Member) => {
     setCurrentMember(member);
+    localStorage.setItem('photobooth_logged_member', JSON.stringify(member));
     sessionStorage.setItem('photobooth_logged_member', JSON.stringify(member));
   };
 
   const handleMemberLogout = () => {
     setCurrentMember(null);
+    localStorage.removeItem('photobooth_logged_member');
     sessionStorage.removeItem('photobooth_logged_member');
   };
 
   const handleUpdateMemberLocal = (updated: Member) => {
     setCurrentMember(updated);
+    localStorage.setItem('photobooth_logged_member', JSON.stringify(updated));
     sessionStorage.setItem('photobooth_logged_member', JSON.stringify(updated));
   };
 

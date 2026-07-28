@@ -117,8 +117,30 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     localStorage.removeItem('photobooth_admin_active_tab');
   }, []);
 
-  // UI state
-  const [activeTab, setActiveTabState] = useState<ActiveTab>('admin');
+  // UI state initialized from URL search params or hash (e.g. ?mode=member, ?mode=customer, ?mode=monitor)
+  const [activeTab, setActiveTabState] = useState<ActiveTab>(() => {
+    if (typeof window !== 'undefined') {
+      try {
+        const searchParams = new URLSearchParams(window.location.search);
+        const rawHash = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
+        const mode = (
+          searchParams.get('mode') ||
+          searchParams.get('portal') ||
+          searchParams.get('view') ||
+          searchParams.get('tab') ||
+          rawHash
+        )?.toLowerCase();
+
+        if (mode === 'member' || mode === 'loyalty') return 'member';
+        if (mode === 'customer' || mode === 'user' || mode === 'tiket') return 'customer';
+        if (mode === 'monitor' || mode === 'tv' || mode === 'display') return 'monitor';
+        if (mode === 'admin') return 'admin';
+      } catch (e) {
+        console.error(e);
+      }
+    }
+    return 'admin';
+  });
   const [selectedTicketForCustomer, setSelectedTicketForCustomer] = useState<Ticket | null>(null);
   const [lastCalledTicket, setLastCalledTicket] = useState<Ticket | null>(() => {
     try {
@@ -252,7 +274,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, [soundEnabled]);
 
-  // Read URL params on load to detect customer direct link e.g. ?ticket=VIN001 or ?view=customer or #admin
+  // Read URL params on load to detect direct links e.g. ?mode=member or ?mode=customer or ?mode=monitor or ?ticket=VIN001
   useEffect(() => {
     const handleUrlChange = () => {
       if (typeof window === 'undefined') return;
@@ -261,9 +283,24 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const rawHash = window.location.hash.replace(/^#\/?/, '').trim().toLowerCase();
       const hashParams = new URLSearchParams(rawHash);
 
-      let viewParam = (searchParams.get('view') || hashParams.get('view')) as ActiveTab | null;
-      if (!viewParam && ['admin', 'monitor', 'customer'].includes(rawHash)) {
-        viewParam = rawHash as ActiveTab;
+      const modeParam = (
+        searchParams.get('mode') ||
+        searchParams.get('portal') ||
+        searchParams.get('view') ||
+        searchParams.get('tab') ||
+        hashParams.get('mode') ||
+        hashParams.get('view') ||
+        rawHash
+      )?.toLowerCase();
+
+      let targetTab: ActiveTab | null = null;
+      if (modeParam === 'member' || modeParam === 'loyalty') targetTab = 'member';
+      else if (modeParam === 'customer' || modeParam === 'user' || modeParam === 'tiket') targetTab = 'customer';
+      else if (modeParam === 'monitor' || modeParam === 'tv' || modeParam === 'display') targetTab = 'monitor';
+      else if (modeParam === 'admin') targetTab = 'admin';
+
+      if (targetTab) {
+        setActiveTabState((prev) => (prev === targetTab ? prev : targetTab!));
       }
 
       const ticketParam =
@@ -273,10 +310,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         searchParams.get('no') ||
         hashParams.get('ticket') ||
         hashParams.get('t');
-
-      if (viewParam && ['admin', 'monitor', 'customer'].includes(viewParam)) {
-        setActiveTabState((prev) => (prev === viewParam ? prev : viewParam));
-      }
 
       if (ticketParam) {
         const cleanNo = ticketParam.trim().toUpperCase();
@@ -837,9 +870,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const setActiveTab = useCallback((tab: ActiveTab) => {
     setActiveTabState(tab);
-    // Update URL query string with pushState so history works
+    // Update URL query string with pushState so history & bookmark works
     if (typeof window !== 'undefined') {
       const url = new URL(window.location.href);
+      url.searchParams.set('mode', tab);
       url.searchParams.set('view', tab);
       window.history.pushState({}, '', url.toString());
     }

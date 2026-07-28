@@ -147,6 +147,112 @@ export const SystemSettingView: React.FC = () => {
           </div>
         </div>
       </div>
+
+      {/* DIRECT URL PORTAL LINKS */}
+      <div className="bg-white p-6 rounded-3xl border border-slate-200/90 shadow-md space-y-4">
+        <div className="flex items-center gap-2 pb-3 border-b border-slate-100">
+          <Settings className="w-5 h-5 text-amber-500" />
+          <div>
+            <h2 className="font-extrabold text-slate-900 text-base">URL Akses Direct Portal Mandiri</h2>
+            <p className="text-xs text-slate-500 font-medium">Link terpisah tanpa perlu login Admin untuk keamanan & kenyamanan pengguna</p>
+          </div>
+        </div>
+
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-4 pt-1">
+          {/* Member Portal Link */}
+          <div className="p-4 bg-amber-50/60 rounded-2xl border border-amber-200/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-amber-900 uppercase tracking-wide">Portal Member</span>
+              <span className="text-[10px] font-bold bg-amber-200/70 text-amber-900 px-2 py-0.5 rounded-md">?mode=member</span>
+            </div>
+            <p className="text-[11px] text-amber-800 font-medium leading-relaxed">
+              Link khusus member login, cek poin, katalog promo, & QR digital tanpa perlu melihat dashboard admin.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?mode=member`;
+                  navigator.clipboard.writeText(url);
+                  alert('URL Portal Member berhasil disalin!');
+                }}
+                className="flex-1 py-1.5 bg-amber-600 hover:bg-amber-700 text-white font-extrabold text-[11px] rounded-xl transition-all active:scale-95"
+              >
+                Salin URL
+              </button>
+              <a
+                href="?mode=member"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 bg-amber-100 hover:bg-amber-200 text-amber-900 font-extrabold text-[11px] rounded-xl transition-all text-center"
+              >
+                Buka
+              </a>
+            </div>
+          </div>
+
+          {/* Customer Queue Link */}
+          <div className="p-4 bg-sky-50/60 rounded-2xl border border-sky-200/80 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-sky-900 uppercase tracking-wide">Portal Pengguna / Tiket</span>
+              <span className="text-[10px] font-bold bg-sky-200/70 text-sky-900 px-2 py-0.5 rounded-md">?mode=customer</span>
+            </div>
+            <p className="text-[11px] text-sky-800 font-medium leading-relaxed">
+              Link untuk pengunjung mengambil tiket antrian mandiri dan memantau status posisi antrian.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?mode=customer`;
+                  navigator.clipboard.writeText(url);
+                  alert('URL Portal Pengguna berhasil disalin!');
+                }}
+                className="flex-1 py-1.5 bg-sky-600 hover:bg-sky-700 text-white font-extrabold text-[11px] rounded-xl transition-all active:scale-95"
+              >
+                Salin URL
+              </button>
+              <a
+                href="?mode=customer"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 bg-sky-100 hover:bg-sky-200 text-sky-900 font-extrabold text-[11px] rounded-xl transition-all text-center"
+              >
+                Buka
+              </a>
+            </div>
+          </div>
+
+          {/* Monitor TV Link */}
+          <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-2">
+            <div className="flex items-center justify-between">
+              <span className="text-xs font-black text-slate-100 uppercase tracking-wide">Display Monitor TV</span>
+              <span className="text-[10px] font-bold bg-slate-800 text-slate-300 px-2 py-0.5 rounded-md">?mode=monitor</span>
+            </div>
+            <p className="text-[11px] text-slate-400 font-medium leading-relaxed">
+              Tampilan layar besar panggil antrian studio & suara panggilan untuk dipasang di TV lobby studio.
+            </p>
+            <div className="flex gap-2 pt-1">
+              <button
+                onClick={() => {
+                  const url = `${window.location.origin}${window.location.pathname}?mode=monitor`;
+                  navigator.clipboard.writeText(url);
+                  alert('URL Monitor TV berhasil disalin!');
+                }}
+                className="flex-1 py-1.5 bg-red-600 hover:bg-red-700 text-white font-extrabold text-[11px] rounded-xl transition-all active:scale-95"
+              >
+                Salin URL
+              </button>
+              <a
+                href="?mode=monitor"
+                target="_blank"
+                rel="noreferrer"
+                className="px-3 py-1.5 bg-slate-800 hover:bg-slate-700 text-slate-200 font-extrabold text-[11px] rounded-xl transition-all text-center"
+              >
+                Buka
+              </a>
+            </div>
+          </div>
+        </div>
+      </div>
     </div>
   );
 };
