@@ -33,8 +33,8 @@ export const OperationalMemberSearch: React.FC<OperationalMemberSearchProps> = (
     const cleanSearch = searchPhone.trim().replace(/\s+/g, '');
     if (cleanSearch.length >= 3) {
       const found = members.find((m) =>
-        m.phone.trim().replace(/\s+/g, '').includes(cleanSearch) ||
-        m.name.toLowerCase().includes(cleanSearch.toLowerCase())
+        (m.phone || '').toString().trim().replace(/\s+/g, '').includes(cleanSearch) ||
+        (m.name || '').toString().toLowerCase().includes(cleanSearch.toLowerCase())
       );
       if (found) {
         setActiveMember(found);
@@ -109,7 +109,7 @@ export const OperationalMemberSearch: React.FC<OperationalMemberSearchProps> = (
       return;
     }
 
-    const exists = members.some((m) => m.phone.trim().replace(/\s+/g, '') === cleanPhone);
+    const exists = members.some((m) => (m.phone || '').toString().trim().replace(/\s+/g, '') === cleanPhone);
     if (exists) {
       setAddError('Nomor telepon ini sudah terdaftar sebagai Member.');
       return;

@@ -31,8 +31,8 @@ export const MemberMasterView: React.FC<MemberMasterViewProps> = ({ members }) =
   // Filter Members
   const filteredMembers = members.filter((m) => {
     const matchesSearch =
-      m.name.toLowerCase().includes(searchTerm.toLowerCase()) ||
-      m.phone.includes(searchTerm);
+      (m.name || '').toString().toLowerCase().includes(searchTerm.toLowerCase()) ||
+      (m.phone || '').toString().includes(searchTerm);
     const matchesTier = tierFilter === 'ALL' || m.tier === tierFilter;
     const matchesStatus = statusFilter === 'ALL' || m.status === statusFilter;
     return matchesSearch && matchesTier && matchesStatus;

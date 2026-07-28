@@ -358,8 +358,8 @@ export async function resetMemberPinWithVerification(
 
   const found = allMembers.find(
     (m) =>
-      m.phone.trim().replace(/\s+/g, '') === cleanPhone &&
-      m.name.trim().toLowerCase() === cleanName &&
+      (m.phone || '').toString().trim().replace(/\s+/g, '') === cleanPhone &&
+      (m.name || '').toString().trim().toLowerCase() === cleanName &&
       (m.dob || '').trim() === dob.trim()
   );
 

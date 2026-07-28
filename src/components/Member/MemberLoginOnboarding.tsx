@@ -50,7 +50,7 @@ export const MemberLoginOnboarding: React.FC<MemberLoginOnboardingProps> = ({
 
     setTimeout(() => {
       const found = members.find(
-        (m) => m.phone.trim().replace(/\s+/g, '') === cleanPhone
+        (m) => (m.phone || '').toString().trim().replace(/\s+/g, '') === cleanPhone
       );
 
       if (!found) {

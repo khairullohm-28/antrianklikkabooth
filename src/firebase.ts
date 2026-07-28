@@ -8,6 +8,7 @@ import {
   onSnapshot,
   setDoc,
   getDoc,
+  getDocs,
   updateDoc,
   deleteDoc,
   setLogLevel
@@ -45,4 +46,4 @@ signInAnonymously(auth).catch((err) => {
   }
 });
 
-export { doc, collection, onSnapshot, setDoc, getDoc, updateDoc, deleteDoc };
+export { doc, collection, onSnapshot, setDoc, getDoc, getDocs, updateDoc, deleteDoc };
