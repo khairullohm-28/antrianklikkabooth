@@ -31,12 +31,20 @@ export const MemberLoginOnboarding: React.FC<MemberLoginOnboardingProps> = ({
   const [confirmPinInput, setConfirmPinInput] = useState('');
   const [onboardingError, setOnboardingError] = useState('');
 
+  const normalizePhone = (p: string) => {
+    let cleaned = (p || '').toString().replace(/[^0-9]/g, '');
+    if (cleaned.startsWith('62')) {
+      cleaned = '0' + cleaned.slice(2);
+    }
+    return cleaned;
+  };
+
   const handleLoginSubmit = (e: React.FormEvent) => {
     e.preventDefault();
     setLoginError('');
 
-    const cleanPhone = phoneInput.trim().replace(/\s+/g, '');
-    if (!cleanPhone) {
+    const targetPhone = normalizePhone(phoneInput);
+    if (!targetPhone) {
       setLoginError('Masukkan nomor telepon yang terdaftar.');
       return;
     }
@@ -49,9 +57,10 @@ export const MemberLoginOnboarding: React.FC<MemberLoginOnboardingProps> = ({
     setLoading(true);
 
     setTimeout(() => {
-      const found = members.find(
-        (m) => (m.phone || '').toString().trim().replace(/\s+/g, '') === cleanPhone
-      );
+      const found = members.find((m) => {
+        const mPhone = normalizePhone(m.phone || '');
+        return mPhone && mPhone === targetPhone;
+      });
 
       if (!found) {
         setLoginError('Nomor telepon tidak terdaftar. Hubungi Admin Kasir untuk pendaftaran.');
@@ -59,7 +68,8 @@ export const MemberLoginOnboarding: React.FC<MemberLoginOnboardingProps> = ({
         return;
       }
 
-      if (found.pin !== pinInput.trim()) {
+      const expectedPin = (found.pin || '12345').toString().trim();
+      if (expectedPin !== pinInput.trim()) {
         setLoginError('PIN yang Anda masukkan salah. PIN default pertama kali: 12345');
         setLoading(false);
         return;
