@@ -83,7 +83,7 @@ export const TicketPrintModal: React.FC = () => {
           </div>
 
           {/* Receipt Container Preview */}
-          <div className="p-6 bg-slate-100 overflow-y-auto flex justify-center items-center">
+          <div className="p-6 bg-slate-100 overflow-y-auto flex flex-col items-center gap-3">
             <TicketReceiptView
               ticket={activeTicketToPrint}
               settings={printSettings}
@@ -91,6 +91,11 @@ export const TicketPrintModal: React.FC = () => {
               id="preview-thermal-ticket"
               isPrintMode={false}
             />
+
+            <div className="w-full max-w-xs p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-snug">
+              <span className="font-extrabold text-amber-950 block mb-0.5">💡 Tips Cetak Printer Thermal/Stiker:</span>
+              Pada dialog cetak browser, pastikan Ukuran Kertas dipilih <b>{spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto/Roll'}</b> agar pas & tidak terpotong.
+            </div>
           </div>
 
           {/* Modal Actions */}
