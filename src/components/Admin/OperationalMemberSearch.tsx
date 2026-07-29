@@ -140,7 +140,7 @@ export const OperationalMemberSearch: React.FC<OperationalMemberSearchProps> = (
         <div>
           <h2 className="font-black text-slate-900 text-sm flex items-center gap-2">
             <UserCheck className="w-4 h-4 text-red-600" />
-            Integrasi Member Loyalitas (POS Kasir)
+            Member Loyalitas
           </h2>
           <p className="text-[11px] text-slate-500 font-medium">
             Cari member untuk memproses poin, stamp, dan otomatisasi tier belanja.
@@ -191,7 +191,7 @@ export const OperationalMemberSearch: React.FC<OperationalMemberSearchProps> = (
               <img
                 src={activeMember.avatarUrl}
                 alt={activeMember.name}
-                className="w-11 h-11 rounded-full object-cover border-2 border-red-500 shadow-sm"
+                className="w-11 h-11 rounded-full object-cover shadow-sm"
               />
               <div>
                 <div className="flex items-center gap-2">
@@ -224,6 +224,35 @@ export const OperationalMemberSearch: React.FC<OperationalMemberSearchProps> = (
 
           {/* TRANSACTION FORM */}
           <form onSubmit={handleProcessTransaction} className="space-y-3">
+            {/* FAST SELECT PRESET PACKAGE */}
+            {(loyaltySettings.presetPackages || []).length > 0 && (
+              <div className="bg-slate-950/60 p-2.5 rounded-xl border border-slate-700/70 flex flex-col sm:flex-row sm:items-center justify-between gap-2">
+                <span className="text-[11px] font-extrabold text-amber-300 flex items-center gap-1 shrink-0">
+                  <Sparkles className="w-3.5 h-3.5 text-amber-400" />
+                  Pilih Paket Fast-Select:
+                </span>
+                <select
+                  onChange={(e) => {
+                    const selectedId = e.target.value;
+                    if (selectedId === 'CUSTOM') return;
+                    const pkg = (loyaltySettings.presetPackages || []).find((p) => p.id === selectedId);
+                    if (pkg) {
+                      setTransactionNote(pkg.name);
+                      setTransactionAmount(pkg.price.toString());
+                    }
+                  }}
+                  className="w-full sm:w-auto px-3 py-1.5 bg-slate-900 border border-slate-700 rounded-lg text-xs font-bold text-white focus:ring-1 focus:ring-amber-400"
+                >
+                  <option value="CUSTOM">-- Pilih Dari Daftar Paket Preset --</option>
+                  {(loyaltySettings.presetPackages || []).map((pkg) => (
+                    <option key={pkg.id} value={pkg.id}>
+                      {pkg.name} - Rp {pkg.price.toLocaleString('id-ID')}
+                    </option>
+                  ))}
+                </select>
+              </div>
+            )}
+
             <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-3">
               <div>
                 <label className="block text-[11px] font-extrabold text-slate-300 mb-1">

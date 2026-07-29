@@ -71,10 +71,10 @@ export const MonitorDashboard: React.FC = () => {
             <img
               src={printSettings.monitorLogoUrl}
               alt="Logo Perusahaan"
-              className="w-12 h-12 rounded-2xl object-contain bg-white/10 p-1 border border-slate-700 shadow-lg shrink-0"
+              className="w-12 h-12 rounded-full object-cover shadow-lg shrink-0"
             />
           ) : (
-            <div className="w-12 h-12 rounded-2xl bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center font-black shadow-lg shadow-red-600/30 shrink-0">
+            <div className="w-12 h-12 rounded-full bg-gradient-to-tr from-red-600 to-rose-500 text-white flex items-center justify-center font-black shadow-lg shadow-red-600/30 shrink-0">
               <Camera className="w-6 h-6" />
             </div>
           )}
@@ -91,7 +91,8 @@ export const MonitorDashboard: React.FC = () => {
           <Sparkles className="w-5 h-5 shrink-0 text-amber-400 z-10 bg-slate-950" />
           <div className="w-full overflow-hidden relative">
             <div className="animate-marquee tracking-wide whitespace-nowrap text-slate-200">
-              {welcomeMessage}
+              <span className="pr-16">{welcomeMessage}</span>
+              <span className="pr-16">{welcomeMessage}</span>
             </div>
           </div>
         </div>

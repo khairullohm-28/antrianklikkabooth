@@ -66,9 +66,9 @@ export const LaporanMasterView: React.FC<LaporanMasterViewProps> = ({ members })
       {/* HEADER */}
       <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl border border-slate-800 flex flex-col md:flex-row items-start md:items-center justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-black text-white flex items-center gap-2">
+          <h1 className="text-2xl font-black text-white uppercase flex items-center gap-2">
             <FileText className="w-6 h-6 text-red-500" />
-            Laporan Analisis Member & Rewards
+            LAPORAN MEMBER
           </h1>
           <p className="text-xs text-slate-400 mt-1">
             Ringkasan member aktif, peringkat member terbaik (Top Member), serta sirkulasi poin dan stamp.

@@ -24,6 +24,20 @@ export const DEFAULT_LOYALTY_SETTINGS: LoyaltySettings = {
     goldMin: 'Akumulasi Poin Minimal 100 Poin',
     diamondMin: 'Akumulasi Poin Minimal 500 Poin',
   },
+  presetPackages: [
+    { id: 'pkg-1', name: 'Paket Studio Express (15 Min)', price: 35000 },
+    { id: 'pkg-2', name: 'Paket Vintage Strip (2 Photos)', price: 50000 },
+    { id: 'pkg-3', name: 'Paket VIP Group (Softcopy + Print)', price: 100000 },
+  ],
+  customTiers: [
+    {
+      id: 'tier-plat',
+      name: 'PLATINUM VIP MEMBER',
+      minPointsRequirement: 'Akumulasi Minimal 1000 Poin',
+      benefitDescription: 'Diskon 25% Semua Paket, Akses VIP Lounge & Cetak Foto Frame Kayu Eksklusif Gratis.',
+      colorTheme: 'purple',
+    },
+  ],
 };
 
 export const DEFAULT_PROMOS: Promo[] = [
@@ -342,6 +356,8 @@ export async function savePromoInFirestore(promo: Partial<Promo> & { id?: string
     costPoints: promo.costPoints || 0,
     costStamps: promo.costStamps || 0,
     isActive: promo.isActive !== undefined ? promo.isActive : true,
+    targetTier: promo.targetTier || 'Semua Tier',
+    maxRedeemPerMember: promo.maxRedeemPerMember !== undefined ? promo.maxRedeemPerMember : 0,
   };
 
   const currentPromos = getLocalCache<Promo[]>(CACHE_KEY_PROMOS, DEFAULT_PROMOS);
@@ -383,6 +399,30 @@ export async function redeemPromoForMember(
     return { success: false, message: `Stamp tidak cukup. Butuh ${promo.costStamps} Stamp.` };
   }
 
+  // Check target tier eligibility
+  if (promo.targetTier && promo.targetTier !== 'Semua Tier') {
+    if (member.tier !== promo.targetTier) {
+      return {
+        success: false,
+        message: `Promo ini khusus untuk Tier Member ${promo.targetTier}. Level Tier Anda: ${member.tier}.`,
+      };
+    }
+  }
+
+  // Check max redeem limit per member from member history
+  const currentHist = getLocalCache<MemberHistory[]>(CACHE_KEY_HISTORY, []);
+  if (promo.maxRedeemPerMember && promo.maxRedeemPerMember > 0) {
+    const memberRedeems = currentHist.filter(
+      (h) => h.memberId === member.id && h.promoId === promo.id
+    );
+    if (memberRedeems.length >= promo.maxRedeemPerMember) {
+      return {
+        success: false,
+        message: `Maaf, promo ini sudah mencapai batas maksimum penukaran (${promo.maxRedeemPerMember}x) untuk akun Anda.`,
+      };
+    }
+  }
+
   const newPoints = member.points - promo.costPoints;
   const newStamps = member.stamps - promo.costStamps;
 
@@ -404,9 +444,9 @@ export async function redeemPromoForMember(
     details: `Penukaran Promo: ${promo.title}`,
     pointsChange: -promo.costPoints,
     stampsChange: -promo.costStamps,
+    promoId: promo.id,
   };
 
-  const currentHist = getLocalCache<MemberHistory[]>(CACHE_KEY_HISTORY, []);
   setLocalCache(CACHE_KEY_HISTORY, [historyItem, ...currentHist]);
 
   try {
@@ -461,13 +501,15 @@ export function subscribeMemberHistory(
   );
 }
 
-// Reset PIN with name, phone, dob matching
+// Reset PIN with name, phone, dob matching and optional Catatan Paket / Transaksi
 export async function resetMemberPinWithVerification(
   name: string,
   phone: string,
   dob: string,
   newPin: string,
-  allMembers: Member[]
+  allMembers: Member[],
+  transactionPackage?: { name: string; price: number },
+  settings?: LoyaltySettings
 ): Promise<{ success: boolean; message: string }> {
   const cleanPhone = phone.trim().replace(/\s+/g, '');
   const cleanName = name.trim().toLowerCase();
@@ -499,8 +541,20 @@ export async function resetMemberPinWithVerification(
     console.info('[MemberService] Firestore resetPin failed (Quota or offline). Saved locally:', err);
   }
 
+  // If transaction package is specified, process transaction purchase
+  let txNote = '';
+  if (transactionPackage && transactionPackage.price > 0 && settings) {
+    await processMemberPurchase(
+      found,
+      transactionPackage.price,
+      transactionPackage.name || `Transaksi Verifikasi PIN Member`,
+      settings
+    );
+    txNote = ` & Transaksi Paket "${transactionPackage.name}" (Rp ${transactionPackage.price.toLocaleString('id-ID')}) tercatat!`;
+  }
+
   return {
     success: true,
-    message: `PIN member ${found.name} berhasil diperbarui!`,
+    message: `PIN member ${found.name} berhasil diperbarui${txNote}`,
   };
 }

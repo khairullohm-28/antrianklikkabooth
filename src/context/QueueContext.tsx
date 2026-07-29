@@ -2,7 +2,25 @@ import React, { createContext, useContext, useState, useEffect, useCallback, use
 import { Booth, Ticket, PrintSettings, ActivityLog, ActiveTab, ActivityAction } from '../types';
 import { DEFAULT_BOOTHS, DEFAULT_PRINT_SETTINGS, INITIAL_TICKETS, INITIAL_LOGS } from '../data/defaultData';
 import { announceQueueVoice } from '../utils/audio';
-import { db, doc, onSnapshot, setDoc } from '../firebase';
+import { db, doc, onSnapshot, setDoc, enableIndexedDbPersistence } from '../firebase';
+
+/**
+ * Helper function to check local state before writing to Firestore.
+ * Reduces update frequency and enables write batching to save daily operational quota.
+ */
+export const checkLocalStateBeforeWrite = (
+  previousHash: string,
+  newHash: string
+): boolean => {
+  return previousHash !== newHash;
+};
+
+// Attempt to enable local IndexedDB persistence for QueueContext offline caching
+try {
+  enableIndexedDbPersistence(db).catch(() => {});
+} catch (e) {
+  // Silent fallback if already initialized
+}
 
 interface QueueContextType {
   booths: Booth[];
@@ -164,9 +182,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   // Ref to prevent polling from overwriting recent local updates (race condition prevention)
   const lastMutationTimeRef = useRef<number>(0);
   const isQuotaExceededRef = useRef<boolean>(false);
+  const lastSavedHashRef = useRef<string>('');
   const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
 
-  // Save helper for Firebase Firestore
+  // Save helper for Firebase Firestore with memoized deduplication
   const saveToFirebase = useCallback(
     async (
       newBooths: Booth[],
@@ -177,7 +196,18 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       activeLastCalled?: Ticket | null
     ) => {
       if (isQuotaExceededRef.current) return;
+
+      const targetLastCalled = activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket;
+      const payloadLogs = (newLogs || []).slice(0, 15);
+
+      // Deduplicate saves to eliminate redundant Firestore write quota usage
+      const payloadHash = `${newBooths.length}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
+      if (lastSavedHashRef.current === payloadHash) {
+        return;
+      }
+
       try {
+        lastSavedHashRef.current = payloadHash;
         lastMutationTimeRef.current = Date.now();
         const docRef = doc(db, 'photobooth', 'appState');
         await setDoc(
@@ -186,9 +216,9 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             booths: newBooths,
             tickets: newTickets,
             printSettings: newPrint,
-            logs: (newLogs || []).slice(0, 25),
+            logs: payloadLogs,
             adminPin: newAdminPin,
-            lastCalledTicket: activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket,
+            lastCalledTicket: targetLastCalled,
             updatedAt: new Date().toISOString(),
           },
           { merge: true }

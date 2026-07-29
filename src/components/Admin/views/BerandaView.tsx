@@ -128,10 +128,7 @@ export const BerandaView: React.FC = () => {
           </h1>
         </div>
 
-        <div className="bg-slate-800/80 backdrop-blur px-4 py-2.5 rounded-2xl border border-slate-700/80 text-right">
-          <span className="text-[10px] font-extrabold text-slate-400 uppercase block tracking-wider">
-            Hari & Tanggal
-          </span>
+        <div className="bg-slate-800/80 backdrop-blur px-4 py-2 rounded-2xl border border-slate-700/80 text-right">
           <span className="text-sm font-black text-red-400 font-mono">
             {now.toLocaleDateString('id-ID', { weekday: 'long', day: 'numeric', month: 'long', year: 'numeric' })}
           </span>

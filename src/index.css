@@ -1,16 +1,86 @@
 @import "tailwindcss";
 
-@keyframes marquee {
+/* SEAMLESS MINIMALIST ANIMATIONS */
+
+/* Horizontal Marquee / Continuous Smooth Slide */
+@keyframes marqueeSeamless {
   0% {
-    transform: translateX(100%);
+    transform: translate3d(0, 0, 0);
   }
   100% {
-    transform: translateX(-100%);
+    transform: translate3d(-50%, 0, 0);
   }
 }
 
+/* Smooth Minimalist Fade & Slide Animations */
+@keyframes fadeSlideUp {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, 16px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fadeSlideDown {
+  0% {
+    opacity: 0;
+    transform: translate3d(0, -16px, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fadeSlideLeft {
+  0% {
+    opacity: 0;
+    transform: translate3d(18px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+@keyframes fadeSlideRight {
+  0% {
+    opacity: 0;
+    transform: translate3d(-18px, 0, 0);
+  }
+  100% {
+    opacity: 1;
+    transform: translate3d(0, 0, 0);
+  }
+}
+
+/* Utility Animation Classes */
 .animate-marquee {
   display: inline-block;
   white-space: nowrap;
-  animation: marquee 22s linear infinite;
+  will-change: transform;
+  animation: marqueeSeamless 22s linear infinite;
+}
+
+.animate-slide-up {
+  will-change: transform;
+  animation: fadeSlideUp 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-down {
+  will-change: transform;
+  animation: fadeSlideDown 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-left {
+  will-change: transform;
+  animation: fadeSlideLeft 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
+}
+
+.animate-slide-right {
+  will-change: transform;
+  animation: fadeSlideRight 0.35s cubic-bezier(0.16, 1, 0.3, 1) forwards;
 }

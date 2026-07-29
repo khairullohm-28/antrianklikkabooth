@@ -1,5 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { Member, Promo, MemberHistory, LoyaltySettings } from '../../types';
+import { useQueue } from '../../context/QueueContext';
+import { compressImage } from '../../utils/imageCompressor';
 import {
   updateMemberInFirestore,
   redeemPromoForMember,
@@ -28,7 +30,8 @@ import {
   Crown,
   ShieldCheck,
   ChevronLeft,
-  Info
+  Info,
+  Upload
 } from 'lucide-react';
 
 interface MemberDashboardProps {
@@ -46,6 +49,8 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
   onLogout,
   onUpdateMemberLocal
 }) => {
+  const { printSettings } = useQueue();
+  const companyLogoUrl = printSettings?.monitorLogoUrl || printSettings?.logoUrl;
   const [activeTab, setActiveTab] = useState<'home' | 'promo' | 'history' | 'profile'>('home');
 
   // Realtime Member Histories
@@ -215,17 +220,17 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
   return (
     <div className="max-w-md mx-auto min-h-screen bg-slate-50 text-slate-900 pb-24 font-sans relative">
       {/* TOP COMPACT APP HEADER */}
-      <div className="sticky top-0 z-30 bg-slate-900 text-white p-4 shadow-md flex items-center justify-between border-b border-slate-800">
+      <div className="sticky top-0 z-30 bg-gradient-to-r from-red-600 via-rose-600 to-red-700 text-white p-4 shadow-md flex items-center justify-between border-b border-red-500">
         <div className="flex items-center gap-2.5">
           <img
             src={member.avatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'}
             alt="Avatar"
-            className="w-9 h-9 rounded-full object-cover border-2 border-red-500 shadow-sm"
+            className="w-9 h-9 rounded-full object-cover shadow-sm"
           />
           <div>
-            <h1 className="text-xs font-extrabold text-white leading-tight">{member.name}</h1>
-            <span className="text-[10px] font-bold text-red-400 uppercase tracking-wider flex items-center gap-1">
-              <Crown className="w-3 h-3 text-amber-400" />
+            <h1 className="text-xs font-black text-white leading-tight">{member.name}</h1>
+            <span className="text-[10px] font-extrabold text-amber-200 uppercase tracking-wider flex items-center gap-1">
+              <Crown className="w-3 h-3 text-amber-300" />
               Member {member.tier}
             </span>
           </div>
@@ -233,7 +238,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
 
         <button
           onClick={onLogout}
-          className="p-2 bg-slate-800 hover:bg-rose-950 text-rose-300 rounded-xl transition-all border border-slate-700 text-xs font-bold flex items-center gap-1"
+          className="px-3 py-1.5 bg-white/10 hover:bg-white/20 text-white rounded-xl transition-all border border-white/20 text-xs font-bold flex items-center gap-1 shadow-sm"
           title="Keluar Member"
         >
           <LogOut className="w-3.5 h-3.5" />
@@ -248,68 +253,86 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
           <div className="space-y-5">
             {/* GREETING HEADER */}
             <div>
-              <p className="text-xs font-bold text-slate-500">
-                Hai, kak <span className="text-slate-900 font-extrabold">{member.name}</span>, selamat {getGreeting()}! 👋
-              </p>
-              <h2 className="text-xl font-black text-slate-900 tracking-tight">
-                Loyalty Rewards Center
+              <h2 className="text-xl sm:text-2xl font-black text-slate-900 tracking-tight leading-snug">
+                Halo, Kak <span className="text-red-600 font-black">{member.name}</span> 👋
               </h2>
+              <p className="text-xs font-bold text-slate-600 mt-1 flex items-center gap-1.5">
+                <span>Selamat {getGreeting()}! Siap abadikan momen serumu hari ini? ✨</span>
+              </p>
             </div>
 
-            {/* DIGITAL MEMBER CARD SUMMARY */}
+            {/* DIGITAL MEMBER CARD SUMMARY (LUXURY PHOTOBOOTH CARD) */}
             <div
               onClick={() => setIsTierModalOpen(true)}
-              className={`p-5 rounded-3xl shadow-xl border cursor-pointer relative overflow-hidden transition-all hover:scale-[1.01] ${getTierCardStyle()}`}
+              className={`p-6 rounded-3xl shadow-2xl cursor-pointer relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.99] ${getTierCardStyle()}`}
             >
-              <div className="absolute top-0 right-0 -mr-6 -mt-6 w-32 h-32 bg-white/10 rounded-full blur-xl pointer-events-none" />
+              {/* Glossy Overlay & Radial Light */}
+              <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-gradient-to-br from-white/20 via-amber-300/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+              <div className="absolute bottom-0 left-0 -ml-10 -mb-10 w-36 h-36 bg-gradient-to-tr from-amber-500/10 via-white/10 to-transparent rounded-full blur-xl pointer-events-none" />
 
-              <div className="flex items-center justify-between mb-4">
-                <div className="flex items-center gap-2">
-                  <div className="w-8 h-8 rounded-xl bg-white/20 backdrop-blur-md flex items-center justify-center font-black text-xs border border-white/30">
-                    PB
-                  </div>
+              {/* CARD TOP BAR */}
+              <div className="flex items-center justify-between mb-5 relative z-10">
+                <div className="flex items-center gap-3">
+                  {companyLogoUrl ? (
+                    <img src={companyLogoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover shadow-md shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center font-black text-xs text-white shadow-md shrink-0">
+                      PB
+                    </div>
+                  )}
                   <div>
-                    <span className="text-[10px] uppercase font-bold tracking-widest text-white/80">Photobooth Card</span>
-                    <h3 className="text-sm font-black text-white">{member.tier} Tier</h3>
+                    <span className="text-[10px] font-black uppercase tracking-[0.2em] text-amber-200/90 block">Photobooth Card</span>
+                    <h3 className="text-base font-black text-white tracking-tight">{member.name}</h3>
                   </div>
                 </div>
 
-                <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-wider text-white border border-white/30 flex items-center gap-1">
+                <div className="px-3.5 py-1 bg-white/15 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-amber-200 border border-amber-300/40 flex items-center gap-1.5 shadow-lg">
                   <Crown className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{member.tier}</span>
+                  <span>{member.tier} VIP</span>
+                </div>
+              </div>
+
+              {/* CHIP & MEMBER PHONE CARD NUMBER */}
+              <div className="flex items-center justify-between mb-5 relative z-10">
+                <div className="w-9 h-7 bg-gradient-to-tr from-amber-300 via-yellow-200 to-amber-400 rounded-lg border border-amber-500/50 shadow-inner flex flex-col justify-around p-1">
+                  <div className="w-full h-0.5 bg-amber-600/40 rounded-full" />
+                  <div className="w-2/3 h-0.5 bg-amber-600/40 rounded-full" />
+                </div>
+                <div className="text-right">
+                  <span className="text-[9px] font-bold text-white/60 uppercase tracking-wider block">Nomor HP Member</span>
+                  <span className="text-xs font-mono font-black tracking-widest text-white/95">{member.phone}</span>
                 </div>
               </div>
 
               {/* POINTS & STAMPS DISPLAY */}
-              <div className="grid grid-cols-2 gap-3 mb-4 bg-black/20 backdrop-blur-sm p-3.5 rounded-2xl border border-white/10">
+              <div className="grid grid-cols-2 gap-3 mb-4 bg-black/40 backdrop-blur-md p-3.5 rounded-2xl border border-white/15 shadow-inner relative z-10">
                 <div>
-                  <p className="text-[10px] font-bold text-white/70 uppercase">Jumlah Poin</p>
+                  <p className="text-[10px] font-extrabold text-amber-200/80 uppercase tracking-wider">Jumlah Poin</p>
                   <p className="text-2xl font-black font-mono text-amber-300 mt-0.5">{member.points} <span className="text-xs font-sans text-white/80">Pts</span></p>
                 </div>
                 <div>
-                  <p className="text-[10px] font-bold text-white/70 uppercase">Jumlah Stamp</p>
+                  <p className="text-[10px] font-extrabold text-emerald-200/80 uppercase tracking-wider">Jumlah Stamp</p>
                   <p className="text-2xl font-black font-mono text-emerald-300 mt-0.5">{member.stamps} <span className="text-xs font-sans text-white/80">Stamps</span></p>
                 </div>
               </div>
 
               {/* TIER PROGRESS BAR */}
-              <div className="space-y-1">
+              <div className="space-y-1 relative z-10">
                 <div className="flex justify-between text-[10px] font-bold text-white/80">
                   <span>Target Ke Level {progressInfo.nextTier}</span>
                   <span>{progressInfo.current} / {progressInfo.max} Pts</span>
                 </div>
                 <div className="w-full bg-white/20 rounded-full h-2 overflow-hidden p-0.5 border border-white/10">
                   <div
-                    className="bg-gradient-to-r from-amber-300 to-emerald-300 h-full rounded-full transition-all duration-500"
+                    className="bg-gradient-to-r from-amber-300 via-yellow-300 to-emerald-300 h-full rounded-full transition-all duration-500 shadow-sm"
                     style={{ width: `${progressInfo.pct}%` }}
                   />
                 </div>
               </div>
 
-              <div className="mt-3 text-right">
-                <span className="text-[10px] font-bold text-white/90 underline inline-flex items-center gap-1">
-                  Lihat Syarat & Benefit Tier
-                  <ChevronRight className="w-3 h-3" />
+              <div className="mt-3 text-right relative z-10">
+                <span className="text-[10px] text-amber-200/90 font-bold hover:underline inline-flex items-center gap-1">
+                  Detail Benefit Level Member <ChevronRight className="w-3.5 h-3.5" />
                 </span>
               </div>
             </div>
@@ -319,7 +342,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               <div className="flex items-center justify-between">
                 <h3 className="font-extrabold text-slate-900 text-sm flex items-center gap-1.5">
                   <Sparkles className="w-4 h-4 text-red-600" />
-                  Promo & Banner Spesial
+                  Promo Special
                 </h3>
                 <button
                   onClick={() => setActiveTab('promo')}
@@ -433,45 +456,81 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                 const canAfford =
                   member.points >= promo.costPoints && member.stamps >= promo.costStamps;
 
+                // Check tier eligibility
+                const isTierEligible =
+                  !promo.targetTier ||
+                  promo.targetTier === 'Semua Tier' ||
+                  member.tier.toUpperCase() === promo.targetTier.toUpperCase() ||
+                  (promo.targetTier === 'Bronze' && ['BRONZE', 'GOLD', 'DIAMOND'].includes(member.tier.toUpperCase())) ||
+                  (promo.targetTier === 'Gold' && ['GOLD', 'DIAMOND'].includes(member.tier.toUpperCase()));
+
+                // Check max redeem limit from history
+                const memberRedeemCount = histories.filter(
+                  (h) => h.type === 'REDEEM' && h.details?.includes(promo.title)
+                ).length;
+
+                const isMaxRedeemed =
+                  promo.maxRedeemPerMember !== undefined &&
+                  promo.maxRedeemPerMember > 0 &&
+                  memberRedeemCount >= promo.maxRedeemPerMember;
+
                 return (
                   <div
                     key={promo.id}
-                    className="bg-white rounded-2xl border border-slate-200 overflow-hidden shadow-sm flex flex-col sm:flex-row"
+                    className="bg-white rounded-2xl border border-slate-200/90 overflow-hidden shadow-sm hover:shadow-md transition-all flex flex-col sm:flex-row items-stretch"
                   >
-                    <img
-                      src={promo.bannerUrl}
-                      alt={promo.title}
-                      className="w-full sm:w-32 h-28 object-cover shrink-0"
-                    />
-                    <div className="p-3.5 flex-1 flex flex-col justify-between space-y-2">
+                    <div className="w-full sm:w-36 md:w-40 h-36 sm:h-auto shrink-0 relative overflow-hidden bg-slate-100">
+                      <img
+                        src={promo.bannerUrl}
+                        alt={promo.title}
+                        className="w-full h-full object-cover absolute inset-0"
+                      />
+                    </div>
+                    <div className="p-3.5 sm:p-4 flex-1 flex flex-col justify-between space-y-2.5">
                       <div>
-                        <div className="flex items-center justify-between mb-1">
-                          <span className="text-[9px] font-black uppercase tracking-wider px-2 py-0.5 rounded bg-red-100 text-red-700">
+                        <div className="flex items-center justify-between mb-1.5 gap-1.5 flex-wrap">
+                          <span className="text-[9px] font-black uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-red-100 text-red-700 border border-red-200">
                             {promo.type.replace('_', ' ')}
                           </span>
-                          <div className="text-xs font-mono font-black">
+                          {promo.targetTier && promo.targetTier !== 'Semua Tier' && (
+                            <span className="text-[9px] font-extrabold uppercase tracking-wider px-2.5 py-0.5 rounded-full bg-amber-100 text-amber-900 border border-amber-200">
+                              Khusus {promo.targetTier}
+                            </span>
+                          )}
+                          <div className="text-xs font-mono font-black ml-auto">
                             {promo.costPoints > 0 && <span className="text-amber-600">{promo.costPoints} Pts </span>}
                             {promo.costStamps > 0 && <span className="text-emerald-600">{promo.costStamps} Stamp</span>}
                           </div>
                         </div>
-                        <h4 className="font-extrabold text-slate-900 text-xs leading-snug">{promo.title}</h4>
-                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-0.5">{promo.description}</p>
+                        <h4 className="font-extrabold text-slate-900 text-xs sm:text-sm leading-snug">{promo.title}</h4>
+                        <p className="text-[11px] text-slate-500 line-clamp-2 mt-1 leading-relaxed">{promo.description}</p>
                       </div>
 
-                      <button
-                        onClick={() => {
-                          setSelectedPromoForRedeem(promo);
-                          setRedeemResultMsg(null);
-                        }}
-                        className={`w-full py-2 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
-                          canAfford
-                            ? 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 active:scale-95'
-                            : 'bg-slate-100 text-slate-400 cursor-not-allowed'
-                        }`}
-                      >
-                        <Gift className="w-3.5 h-3.5" />
-                        <span>{canAfford ? 'Tukarkan Promo' : 'Poin/Stamp Tidak Cukup'}</span>
-                      </button>
+                      {isMaxRedeemed ? (
+                        <div className="w-full py-2 bg-slate-100 border border-slate-200 text-slate-500 rounded-xl text-xs font-extrabold text-center">
+                          Sudah Expired / Batas Tukar Habis
+                        </div>
+                      ) : !isTierEligible ? (
+                        <div className="w-full py-2 bg-amber-50 border border-amber-200 text-amber-800 rounded-xl text-xs font-extrabold text-center">
+                          Khusus Member Tier {promo.targetTier}
+                        </div>
+                      ) : (
+                        <button
+                          onClick={() => {
+                            setSelectedPromoForRedeem(promo);
+                            setRedeemResultMsg(null);
+                          }}
+                          disabled={!canAfford}
+                          className={`w-full py-2.5 rounded-xl text-xs font-extrabold transition-all flex items-center justify-center gap-1.5 ${
+                            canAfford
+                              ? 'bg-red-600 hover:bg-red-700 text-white shadow-md shadow-red-600/20 active:scale-95'
+                              : 'bg-slate-100 text-slate-400 cursor-not-allowed'
+                          }`}
+                        >
+                          <Gift className="w-3.5 h-3.5" />
+                          <span>{canAfford ? 'Tukarkan Promo' : 'Poin/Stamp Tidak Cukup'}</span>
+                        </button>
+                      )}
                     </div>
                   </div>
                 );
@@ -563,28 +622,49 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               </p>
             </div>
 
-            {/* DIGITAL MEMBER CARD DISPLAY (INTERACTIVE) */}
+            {/* DIGITAL MEMBER CARD DISPLAY (LUXURY PHOTOBOOTH CARD) */}
             <div
               onClick={() => setIsTierModalOpen(true)}
-              className={`p-5 rounded-3xl shadow-xl border cursor-pointer relative overflow-hidden transition-all hover:scale-[1.01] ${getTierCardStyle()}`}
+              className={`p-6 rounded-3xl shadow-2xl cursor-pointer relative overflow-hidden transition-all hover:scale-[1.01] active:scale-[0.99] ${getTierCardStyle()}`}
             >
-              <div className="flex items-center justify-between mb-6">
-                <div>
-                  <h3 className="text-xs font-black uppercase tracking-widest text-white/80">Photobooth Digital Pass</h3>
-                  <p className="text-base font-black text-white">{member.name}</p>
+              {/* Glossy Overlay */}
+              <div className="absolute top-0 right-0 -mr-10 -mt-10 w-40 h-40 bg-gradient-to-br from-white/20 via-amber-300/10 to-transparent rounded-full blur-2xl pointer-events-none" />
+
+              <div className="flex items-center justify-between mb-6 relative z-10">
+                <div className="flex items-center gap-3">
+                  {companyLogoUrl ? (
+                    <img src={companyLogoUrl} alt="Logo" className="w-10 h-10 rounded-full object-cover shadow-md shrink-0" />
+                  ) : (
+                    <div className="w-10 h-10 rounded-full bg-gradient-to-tr from-red-600 to-amber-500 flex items-center justify-center font-black text-xs text-white shadow-md shrink-0">
+                      PB
+                    </div>
+                  )}
+                  <div>
+                    <h3 className="text-xs font-black uppercase tracking-[0.2em] text-amber-200/90">Photobooth Card</h3>
+                    <p className="text-base font-black text-white tracking-tight">{member.name}</p>
+                  </div>
                 </div>
-                <div className="px-3 py-1 bg-white/20 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-wider text-white border border-white/30 flex items-center gap-1">
+
+                <div className="px-3.5 py-1 bg-white/15 backdrop-blur-md rounded-full text-[10px] font-black uppercase tracking-widest text-amber-200 border border-amber-300/40 flex items-center gap-1.5 shadow-lg">
                   <Crown className="w-3.5 h-3.5 text-amber-300" />
-                  <span>{member.tier}</span>
+                  <span>{member.tier} VIP</span>
                 </div>
               </div>
 
-              <div className="flex items-end justify-between">
-                <div>
-                  <p className="text-[10px] font-bold text-white/70 uppercase">Nomor HP Member</p>
-                  <p className="text-xs font-mono font-bold text-white">{member.phone}</p>
+              {/* CARD DETAILS ROW */}
+              <div className="flex items-end justify-between relative z-10">
+                <div className="flex items-center gap-3">
+                  <div className="w-9 h-7 bg-gradient-to-tr from-amber-300 via-yellow-200 to-amber-400 rounded-lg border border-amber-500/50 shadow-inner flex flex-col justify-around p-1">
+                    <div className="w-full h-0.5 bg-amber-600/40 rounded-full" />
+                    <div className="w-2/3 h-0.5 bg-amber-600/40 rounded-full" />
+                  </div>
+                  <div>
+                    <p className="text-[9px] font-bold text-white/60 uppercase tracking-wider">Nomor HP Member</p>
+                    <p className="text-xs font-mono font-black tracking-widest text-white">{member.phone}</p>
+                  </div>
                 </div>
-                <span className="text-[10px] text-white/90 underline font-bold flex items-center gap-1">
+
+                <span className="text-[10px] text-amber-200 underline font-bold flex items-center gap-1">
                   Info Keuntungan Tier
                   <ChevronRight className="w-3.5 h-3.5" />
                 </span>
@@ -598,7 +678,7 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                   <img
                     src={member.avatarUrl}
                     alt={member.name}
-                    className="w-12 h-12 rounded-full object-cover border-2 border-red-500"
+                    className="w-12 h-12 rounded-full object-cover shadow-sm"
                   />
                   <div>
                     <h3 className="font-extrabold text-slate-900 text-sm">{member.name}</h3>
@@ -764,6 +844,12 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
                   </div>
                 </div>
 
+                {/* CASHIER WARNING */}
+                <div className="p-3 bg-amber-50 border-2 border-amber-300 rounded-2xl text-amber-950 text-xs font-black flex items-center gap-2.5 shadow-sm animate-pulse">
+                  <AlertCircle className="w-5 h-5 text-amber-600 shrink-0" />
+                  <span>Penting: Jangan tekan tukar sebelum di depan kasir!</span>
+                </div>
+
                 <button
                   onClick={handleConfirmRedeem}
                   className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-2xl shadow-lg shadow-red-600/30 transition-all flex items-center justify-center gap-1.5"
@@ -791,35 +877,76 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               </button>
             </div>
 
-            <div className="space-y-3 text-xs">
-              {/* BRONZE */}
-              <div className="p-3 bg-stone-50 border border-stone-200 rounded-2xl space-y-1">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-amber-800 text-xs">BRONZE MEMBER</h4>
-                  <span className="text-[10px] font-bold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Level 1</span>
+            <div className="space-y-4">
+              {/* BAGIAN 1: HAK & KEUNTUNGAN LEVEL TIER MEMBER */}
+              <div>
+                <span className="text-[10px] font-black uppercase tracking-wider text-red-600 bg-red-50 px-2.5 py-1 rounded-md block w-fit mb-2">
+                  1. Hak & Keuntungan Member
+                </span>
+                <div className="space-y-2.5 text-xs">
+                  {/* BRONZE */}
+                  <div className="p-3 bg-gradient-to-r from-amber-50/80 to-orange-50/80 border border-amber-200/80 rounded-2xl space-y-1">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-black text-amber-900 text-xs">BRONZE MEMBER</h4>
+                      <span className="text-[9px] font-extrabold bg-amber-200 text-amber-900 px-2 py-0.5 rounded-full">Level 1</span>
+                    </div>
+                    <p className="text-slate-700 text-[11px] font-medium leading-relaxed">{loyaltySettings.tierBenefits.bronze}</p>
+                    <div className="pt-1 text-[10px] text-amber-800 font-extrabold flex items-center gap-1">
+                      <span>🎯 Syarat:</span>
+                      <span>{loyaltySettings.tierBenefits.bronzeMin}</span>
+                    </div>
+                  </div>
+
+                  {/* GOLD */}
+                  <div className="p-3 bg-gradient-to-r from-amber-100/70 to-yellow-100/70 border border-amber-300 rounded-2xl space-y-1">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-black text-amber-950 text-xs">GOLD MEMBER</h4>
+                      <span className="text-[9px] font-extrabold bg-amber-400 text-amber-950 px-2 py-0.5 rounded-full">Level 2</span>
+                    </div>
+                    <p className="text-slate-800 text-[11px] font-medium leading-relaxed">{loyaltySettings.tierBenefits.gold}</p>
+                    <div className="pt-1 text-[10px] text-amber-900 font-extrabold flex items-center gap-1">
+                      <span>🎯 Syarat:</span>
+                      <span>{loyaltySettings.tierBenefits.goldMin}</span>
+                    </div>
+                  </div>
+
+                  {/* DIAMOND */}
+                  <div className="p-3 bg-gradient-to-r from-cyan-50 to-blue-50 border border-cyan-300 rounded-2xl space-y-1">
+                    <div className="flex justify-between items-center">
+                      <h4 className="font-black text-cyan-950 text-xs">DIAMOND VIP MEMBER</h4>
+                      <span className="text-[9px] font-extrabold bg-cyan-400 text-cyan-950 px-2 py-0.5 rounded-full">Top Tier</span>
+                    </div>
+                    <p className="text-slate-800 text-[11px] font-medium leading-relaxed">{loyaltySettings.tierBenefits.diamond}</p>
+                    <div className="pt-1 text-[10px] text-cyan-900 font-extrabold flex items-center gap-1">
+                      <span>🎯 Syarat:</span>
+                      <span>{loyaltySettings.tierBenefits.diamondMin}</span>
+                    </div>
+                  </div>
                 </div>
-                <p className="text-slate-600 text-[11px] font-medium">{loyaltySettings.tierBenefits.bronze}</p>
-                <p className="text-[10px] text-slate-400 font-bold mt-1">{loyaltySettings.tierBenefits.bronzeMin}</p>
               </div>
 
-              {/* GOLD */}
-              <div className="p-3 bg-amber-50 border border-amber-200 rounded-2xl space-y-1">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-amber-900 text-xs">GOLD MEMBER</h4>
-                  <span className="text-[10px] font-bold bg-amber-300 text-amber-950 px-2 py-0.5 rounded-full">Level 2</span>
+              {/* BAGIAN 2: ATURAN POIN & STAMP */}
+              <div className="pt-2 border-t border-slate-100">
+                <span className="text-[10px] font-black uppercase tracking-wider text-emerald-700 bg-emerald-50 px-2.5 py-1 rounded-md block w-fit mb-2">
+                  2. Aturan Perolehan Poin & Stamp
+                </span>
+                <div className="p-3 bg-slate-50 border border-slate-200 rounded-2xl space-y-2 text-xs">
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Perolehan Poin:</span>
+                    <span className="font-mono font-black text-amber-600">
+                      Rp {loyaltySettings.pointsEarnRate?.toLocaleString() || '10.000'} = 1 Poin
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <span className="text-slate-600 font-medium">Perolehan Stamp:</span>
+                    <span className="font-mono font-black text-emerald-600">
+                      Rp {loyaltySettings.stampsEarnRate?.toLocaleString() || '50.000'} = 1 Stamp
+                    </span>
+                  </div>
+                  <p className="text-[10px] text-slate-500 font-medium pt-1 border-t border-slate-200/60 italic">
+                    *Poin & Stamp yang telah terkumpul dapat ditukarkan dengan promo/diskon spesial di menu Katalog Promo.
+                  </p>
                 </div>
-                <p className="text-slate-700 text-[11px] font-medium">{loyaltySettings.tierBenefits.gold}</p>
-                <p className="text-[10px] text-amber-700 font-bold mt-1">{loyaltySettings.tierBenefits.goldMin}</p>
-              </div>
-
-              {/* DIAMOND */}
-              <div className="p-3 bg-cyan-50 border border-cyan-200 rounded-2xl space-y-1">
-                <div className="flex justify-between items-center">
-                  <h4 className="font-black text-cyan-900 text-xs">DIAMOND VIP MEMBER</h4>
-                  <span className="text-[10px] font-bold bg-cyan-300 text-cyan-950 px-2 py-0.5 rounded-full">Top Level</span>
-                </div>
-                <p className="text-slate-700 text-[11px] font-medium">{loyaltySettings.tierBenefits.diamond}</p>
-                <p className="text-[10px] text-cyan-800 font-bold mt-1">{loyaltySettings.tierBenefits.diamondMin}</p>
               </div>
             </div>
 
@@ -880,14 +1007,35 @@ export const MemberDashboard: React.FC<MemberDashboardProps> = ({
               </div>
 
               <div>
-                <label className="block font-bold text-slate-700 mb-1">URL Avatar / Foto Profil</label>
-                <input
-                  type="url"
-                  value={editAvatarUrl}
-                  onChange={(e) => setEditAvatarUrl(e.target.value)}
-                  placeholder="https://..."
-                  className="w-full px-3 py-2 border border-slate-300 rounded-xl text-[11px]"
-                />
+                <label className="block font-bold text-slate-700 mb-1">Foto Profil Member</label>
+                <div className="space-y-2">
+                  <div className="flex items-center gap-3">
+                    <img
+                      src={editAvatarUrl || 'https://images.unsplash.com/photo-1535713875002-d1d0cf377fde?auto=format&fit=crop&w=200&q=80'}
+                      alt="Preview Avatar"
+                      className="w-14 h-14 rounded-full object-cover shadow-sm shrink-0"
+                    />
+                    <label className="cursor-pointer px-3.5 py-2 bg-red-600 hover:bg-red-700 text-white rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all shadow-md active:scale-95">
+                      <Upload className="w-3.5 h-3.5" />
+                      <span>Upload Foto HD</span>
+                      <input
+                        type="file"
+                        accept="image/*"
+                        className="hidden"
+                        onChange={async (e) => {
+                          const file = e.target.files?.[0];
+                          if (!file) return;
+                          try {
+                            const compressed = await compressImage(file, 500, 500, 0.82);
+                            setEditAvatarUrl(compressed);
+                          } catch (err) {
+                            alert('Gagal mengompres gambar foto profil: ' + err);
+                          }
+                        }}
+                      />
+                    </label>
+                  </div>
+                </div>
               </div>
             </div>
 

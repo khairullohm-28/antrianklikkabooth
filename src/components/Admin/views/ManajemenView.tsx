@@ -14,6 +14,7 @@ import {
   RotateCcw,
   Clock,
   ShieldAlert,
+  Save,
 } from 'lucide-react';
 
 export const ManajemenView: React.FC = () => {
@@ -135,8 +136,8 @@ export const ManajemenView: React.FC = () => {
               type="submit"
               className="w-full py-3 bg-red-600 hover:bg-red-700 text-white font-extrabold text-xs rounded-xl shadow-lg shadow-red-600/20 transition-all flex items-center justify-center gap-1.5 active:scale-95"
             >
-              <Plus className="w-4 h-4" />
-              <span>Simpan Booth Baru</span>
+              <Save className="w-4 h-4" />
+              <span>Simpan</span>
             </button>
           </form>
         </div>

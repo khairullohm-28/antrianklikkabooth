@@ -57,7 +57,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         id: 'operasional' as AdminTab,
-        label: 'OPERASIONAL',
+        label: 'MEMBER LOYALTY',
         icon: PlaySquare,
       },
     ],
@@ -80,25 +80,25 @@ export const navGroups: NavGroup[] = [
       },
       {
         id: 'setting' as AdminTab,
-        label: 'CUSTOM TICKET DESIGNER',
+        label: 'CUSTOM TICKET',
         icon: Printer,
       },
       {
         id: 'laporan' as AdminTab,
-        label: 'LAPORAN & ANALISIS ANTRIAN',
+        label: 'LAPORAN TRANSAKSI',
         icon: FileSpreadsheet,
       },
     ],
   },
   {
     id: 'member_loyalitas',
-    groupTitle: 'MEMBER LOYALITAS',
+    groupTitle: 'MEMBER LOYALTY',
     dotColor: 'bg-amber-400',
     collapsible: true,
     items: [
       {
         id: 'master_member' as AdminTab,
-        label: 'MEMBER LOYALITAS',
+        label: 'MEMBER LOYALTY',
         icon: UserCheck,
       },
       {
@@ -108,7 +108,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         id: 'master_laporan' as AdminTab,
-        label: 'LAPORAN ANALISIS MEMBER',
+        label: 'LAPORAN MEMBER',
         icon: FileText,
       },
       {
@@ -190,10 +190,10 @@ export const AdminSidebar: React.FC<AdminSidebarProps> = ({
               <img
                 src={logoUrl}
                 alt="Logo"
-                className="w-8 h-8 rounded-xl object-contain bg-white p-1 shrink-0 shadow-sm"
+                className="w-8 h-8 rounded-full object-cover shrink-0 shadow-sm"
               />
             ) : (
-              <div className="w-8 h-8 rounded-xl bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white shrink-0 shadow-md shadow-red-600/30">
+              <div className="w-8 h-8 rounded-full bg-gradient-to-br from-red-600 to-red-800 flex items-center justify-center text-white shrink-0 shadow-md shadow-red-600/30">
                 <Camera className="w-4 h-4" />
               </div>
             )}

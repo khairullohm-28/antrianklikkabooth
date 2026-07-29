@@ -151,6 +151,8 @@ export interface Promo {
   costPoints: number;
   costStamps: number;
   isActive: boolean;
+  targetTier?: string; // 'Semua Tier' | 'Bronze' | 'Gold' | 'Diamond'
+  maxRedeemPerMember?: number; // 0 for unlimited, 1 for once, 2, etc.
 }
 
 export type MemberHistoryType = 'PURCHASE' | 'REDEEM_POINT' | 'REDEEM_STAMP';
@@ -166,6 +168,23 @@ export interface MemberHistory {
   pointsChange: number;
   stampsChange: number;
   amount?: number;
+  promoId?: string;
+  packageName?: string;
+  packagePrice?: number;
+}
+
+export interface TransactionPackage {
+  id: string;
+  name: string;
+  price: number;
+}
+
+export interface CustomTier {
+  id: string;
+  name: string;
+  minPointsRequirement: string;
+  benefitDescription: string;
+  colorTheme?: string;
 }
 
 export interface LoyaltySettings {
@@ -181,6 +200,8 @@ export interface LoyaltySettings {
     goldMin: string;
     diamondMin: string;
   };
+  customTiers?: CustomTier[];
+  presetPackages?: TransactionPackage[];
 }
 
 export type ActiveTab = 'admin' | 'monitor' | 'customer' | 'member';

@@ -85,8 +85,8 @@ export const LaporanView: React.FC = () => {
       {/* HEADER BANNER */}
       <div className="p-6 bg-slate-900 rounded-3xl text-white shadow-xl border border-slate-800 flex items-center justify-between">
         <div>
-          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white">
-            Laporan & Analisis Transaksi
+          <h1 className="text-2xl sm:text-3xl font-black tracking-tight text-white uppercase">
+            LAPORAN TRANSAKSI
           </h1>
         </div>
 

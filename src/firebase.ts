@@ -46,4 +46,4 @@ signInAnonymously(auth).catch((err) => {
   }
 });
 
-export { doc, collection, onSnapshot, setDoc, getDoc, getDocs, updateDoc, deleteDoc };
+export { doc, collection, onSnapshot, setDoc, getDoc, getDocs, updateDoc, deleteDoc, enableIndexedDbPersistence };

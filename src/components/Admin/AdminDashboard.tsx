@@ -132,9 +132,9 @@ export const AdminDashboard: React.FC = () => {
       <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-2.5">
           {logoUrl ? (
-            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-xl object-contain bg-white p-0.5" />
+            <img src={logoUrl} alt="Logo" className="w-8 h-8 rounded-full object-cover shadow-sm" />
           ) : (
-            <div className="w-8 h-8 rounded-xl bg-red-600 flex items-center justify-center font-bold text-white shadow-sm">
+            <div className="w-8 h-8 rounded-full bg-red-600 flex items-center justify-center font-bold text-white shadow-sm">
               <Camera className="w-4 h-4" />
             </div>
           )}
