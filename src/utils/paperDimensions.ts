@@ -379,6 +379,8 @@ export const getPaperDimensionSpec = (
   // Adjust pageSizeCss and orientation
   spec.orientation = orientation;
 
+  const effectiveHeightMm = spec.heightMm !== null ? spec.heightMm : (spec.widthMm >= 80 ? 160 : 120);
+
   if (orientation === 'landscape') {
     if (spec.heightMm !== null) {
       const origW = spec.widthMm;
@@ -399,14 +401,14 @@ export const getPaperDimensionSpec = (
       spec.logoMaxPx = Math.min(spec.logoMaxPx, Math.floor((spec.heightMm * 3.78) * 0.22));
     } else {
       // Continuous roll (58mm, 80mm) in landscape
-      spec.pageSizeCss = `${spec.widthMm}mm auto landscape`;
+      spec.pageSizeCss = `${spec.widthMm}mm ${effectiveHeightMm}mm landscape`;
     }
   } else {
     // Portrait orientation
     if (spec.heightMm !== null) {
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm portrait`;
+      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm`;
     } else {
-      spec.pageSizeCss = `${spec.widthMm}mm auto portrait`;
+      spec.pageSizeCss = `${spec.widthMm}mm ${effectiveHeightMm}mm`;
     }
   }
 
