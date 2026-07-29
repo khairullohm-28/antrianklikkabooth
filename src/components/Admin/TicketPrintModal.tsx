@@ -2,8 +2,9 @@ import React from 'react';
 import ReactDOM from 'react-dom';
 import { useQueue } from '../../context/QueueContext';
 import { TicketReceiptView } from './TicketReceiptView';
-import { Printer, X, Share2 } from 'lucide-react';
+import { Printer, X, Share2, Smartphone, Copy, Check, ExternalLink } from 'lucide-react';
 import { getPaperDimensionSpec } from '../../utils/paperDimensions';
+import { generateBluetoothPrintPayload, sendToBluetoothPrintApp } from '../../utils/bluetoothPrintHelper';
 
 export const TicketPrintModal: React.FC = () => {
   const {
@@ -17,6 +18,8 @@ export const TicketPrintModal: React.FC = () => {
 
   const [isPrinting, setIsPrinting] = React.useState(false);
   const [copied, setCopied] = React.useState(false);
+  const [btCopied, setBtCopied] = React.useState(false);
+  const [showBtCode, setShowBtCode] = React.useState(false);
 
   if (!isPrintModalOpen || !activeTicketToPrint) return null;
 
@@ -34,6 +37,15 @@ export const TicketPrintModal: React.FC = () => {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const customerQrUrl = `${origin}?view=customer&ticket=${activeTicketToPrint.ticketNumber}`;
 
+  // Generate Bluetooth Print payload string
+  const bluetoothPayload = generateBluetoothPrintPayload(
+    activeTicketToPrint,
+    printSettings,
+    booth?.name,
+    estimatedWaitMinutes,
+    customerQrUrl
+  );
+
   const handlePrint = () => {
     setIsPrinting(true);
     requestAnimationFrame(() => {
@@ -47,6 +59,26 @@ export const TicketPrintModal: React.FC = () => {
         }
       }, 100);
     });
+  };
+
+  const handleBluetoothPrint = () => {
+    const success = sendToBluetoothPrintApp(bluetoothPayload);
+    if (!success) {
+      alert('Gagal membuka Bluetooth Print App. Pastikan aplikasi Bluetooth Print terinstall di perangkat Android Anda.');
+    }
+  };
+
+  const handleCopyBtCode = async () => {
+    try {
+      if (navigator.clipboard) {
+        await navigator.clipboard.writeText(bluetoothPayload);
+      }
+      setBtCopied(true);
+      setTimeout(() => setBtCopied(false), 2500);
+    } catch {
+      setBtCopied(true);
+      setTimeout(() => setBtCopied(false), 2500);
+    }
   };
 
   const handleCopyLink = async () => {
@@ -95,6 +127,62 @@ export const TicketPrintModal: React.FC = () => {
             <div className="w-full max-w-xs p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-snug">
               <span className="font-extrabold text-amber-950 block mb-0.5">💡 Tips Cetak Printer Thermal/Stiker:</span>
               Pada dialog cetak browser, pastikan Ukuran Kertas dipilih <b>{spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto/Roll'}</b> agar pas & tidak terpotong.
+            </div>
+
+            {/* BLUETOOTH PRINT APP INTEGRATION SECTION */}
+            <div className="w-full max-w-xs p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-left space-y-2">
+              <div className="flex items-center justify-between">
+                <div className="flex items-center gap-1.5 font-extrabold text-xs text-blue-950">
+                  <Smartphone className="w-4 h-4 text-blue-600" />
+                  <span>Bluetooth Print App (Android)</span>
+                </div>
+                <span className="text-[10px] font-bold bg-blue-200 text-blue-900 px-1.5 py-0.5 rounded">App Direct</span>
+              </div>
+
+              <p className="text-[11px] text-blue-800 leading-tight">
+                Kirim tiket langsung ke aplikasi <b>Bluetooth Print</b> untuk printer thermal Bluetooth/USB Android.
+              </p>
+
+              <div className="flex gap-1.5 pt-1">
+                <button
+                  type="button"
+                  id="btn-trigger-bluetooth-app"
+                  onClick={handleBluetoothPrint}
+                  className="flex-1 py-1.5 bg-blue-600 hover:bg-blue-700 text-white font-bold text-xs rounded-lg shadow-sm transition-all flex items-center justify-center gap-1 active:scale-95"
+                >
+                  <Smartphone className="w-3.5 h-3.5" />
+                  <span>Cetak via App</span>
+                </button>
+
+                <button
+                  type="button"
+                  onClick={() => setShowBtCode(!showBtCode)}
+                  className="px-2.5 py-1.5 bg-white border border-blue-300 hover:bg-blue-100 text-blue-900 font-bold text-[11px] rounded-lg transition-all"
+                >
+                  {showBtCode ? 'Sembunyikan Tag' : 'Lihat Tag'}
+                </button>
+              </div>
+
+              {showBtCode && (
+                <div className="mt-2 p-2 bg-slate-900 text-slate-100 rounded-lg text-[10px] font-mono space-y-1.5 overflow-x-auto">
+                  <div className="flex items-center justify-between border-b border-slate-700 pb-1">
+                    <span className="text-slate-400 font-sans font-bold">Bluetooth Print Payload:</span>
+                    <button
+                      onClick={handleCopyBtCode}
+                      className="flex items-center gap-1 px-1.5 py-0.5 bg-slate-800 hover:bg-slate-700 text-slate-200 rounded font-sans text-[10px]"
+                    >
+                      {btCopied ? <Check className="w-3 h-3 text-emerald-400" /> : <Copy className="w-3 h-3" />}
+                      <span>{btCopied ? 'Tersalin' : 'Salin'}</span>
+                    </button>
+                  </div>
+                  <pre className="whitespace-pre-wrap break-all text-emerald-400 text-[10px]">
+                    {bluetoothPayload}
+                  </pre>
+                  <div className="pt-1 text-[9px] font-sans text-slate-400">
+                    Play Store App Package: <code className="text-blue-300">mate.bluetoothprint</code>
+                  </div>
+                </div>
+              )}
             </div>
           </div>
 

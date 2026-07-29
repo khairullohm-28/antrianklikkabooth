@@ -92,6 +92,26 @@ export const DEFAULT_MEMBERS: Member[] = [
   },
 ];
 
+const CACHE_KEY_LOYALTY = 'photobooth_cached_loyalty_settings';
+const CACHE_KEY_MEMBERS = 'photobooth_cached_members';
+const CACHE_KEY_PROMOS = 'photobooth_cached_promos';
+const CACHE_KEY_HISTORY = 'photobooth_cached_member_history';
+
+function getLocalCache<T>(key: string, fallback: T): T {
+  try {
+    const raw = localStorage.getItem(key);
+    return raw ? JSON.parse(raw) : fallback;
+  } catch {
+    return fallback;
+  }
+}
+
+function setLocalCache(key: string, data: any) {
+  try {
+    localStorage.setItem(key, JSON.stringify(data));
+  } catch {}
+}
+
 // Calculate Tier from points
 export function calculateTier(points: number, settings: LoyaltySettings): MemberTier {
   if (points >= settings.diamondThresholdPoints) return 'Diamond';
@@ -106,24 +126,37 @@ export function subscribeLoyaltySettings(callback: (settings: LoyaltySettings) =
     docRef,
     (snapshot) => {
       if (snapshot.exists()) {
-        callback({ ...DEFAULT_LOYALTY_SETTINGS, ...snapshot.data() } as LoyaltySettings);
+        const data = { ...DEFAULT_LOYALTY_SETTINGS, ...snapshot.data() } as LoyaltySettings;
+        setLocalCache(CACHE_KEY_LOYALTY, data);
+        callback(data);
       } else {
         // Seed default loyalty settings
-        setDoc(docRef, DEFAULT_LOYALTY_SETTINGS).catch(console.error);
+        setDoc(docRef, DEFAULT_LOYALTY_SETTINGS).catch(() => {});
+        setLocalCache(CACHE_KEY_LOYALTY, DEFAULT_LOYALTY_SETTINGS);
         callback(DEFAULT_LOYALTY_SETTINGS);
       }
     },
     (err) => {
-      console.warn('Error subscribing to loyalty settings:', err);
-      callback(DEFAULT_LOYALTY_SETTINGS);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('Quota limit exceeded') || errMsg.includes('Quota exceeded') || errMsg.includes('resource-exhausted')) {
+        console.info('[MemberService] Firestore Quota exceeded. Using local cached Loyalty Settings.');
+      } else {
+        console.warn('Notice on subscribing loyalty settings:', errMsg);
+      }
+      callback(getLocalCache(CACHE_KEY_LOYALTY, DEFAULT_LOYALTY_SETTINGS));
     }
   );
 }
 
 // Update Loyalty Settings
 export async function updateLoyaltySettingsInFirestore(settings: LoyaltySettings) {
-  const docRef = doc(db, 'loyalty_settings', 'config');
-  await setDoc(docRef, settings, { merge: true });
+  setLocalCache(CACHE_KEY_LOYALTY, settings);
+  try {
+    const docRef = doc(db, 'loyalty_settings', 'config');
+    await setDoc(docRef, settings, { merge: true });
+  } catch (err) {
+    console.info('[MemberService] Firestore update failed (Quota or offline). Saved locally:', err);
+  }
 }
 
 // Subscribe to Members list
@@ -137,18 +170,25 @@ export function subscribeMembers(callback: (members: Member[]) => void) {
         snapshot.forEach((d) => {
           list.push({ id: d.id, ...d.data() } as Member);
         });
+        setLocalCache(CACHE_KEY_MEMBERS, list);
         callback(list);
       } else {
         // Seed default members if collection is empty
         Promise.all(
           DEFAULT_MEMBERS.map((m) => setDoc(doc(db, 'members', m.id), m))
-        ).catch(console.error);
+        ).catch(() => {});
+        setLocalCache(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
         callback(DEFAULT_MEMBERS);
       }
     },
     (err) => {
-      console.warn('Error subscribing members:', err);
-      callback(DEFAULT_MEMBERS);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('Quota limit exceeded') || errMsg.includes('Quota exceeded') || errMsg.includes('resource-exhausted')) {
+        console.info('[MemberService] Firestore Quota exceeded. Using local cached Members.');
+      } else {
+        console.warn('Notice on subscribing members:', errMsg);
+      }
+      callback(getLocalCache(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS));
     }
   );
 }
@@ -173,15 +213,32 @@ export async function createMember(name: string, phone: string, initialPin = '12
     status: 'Aktif',
   };
 
-  const docRef = doc(db, 'members', memberId);
-  await setDoc(docRef, newMember);
+  // Update local cache
+  const currentList = getLocalCache<Member[]>(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
+  setLocalCache(CACHE_KEY_MEMBERS, [newMember, ...currentList]);
+
+  try {
+    const docRef = doc(db, 'members', memberId);
+    await setDoc(docRef, newMember);
+  } catch (err) {
+    console.info('[MemberService] Firestore createMember failed (Quota or offline). Saved locally:', err);
+  }
   return newMember;
 }
 
 // Update Member fields
 export async function updateMemberInFirestore(memberId: string, updates: Partial<Member>) {
-  const docRef = doc(db, 'members', memberId);
-  await updateDoc(docRef, updates);
+  // Update local cache
+  const currentList = getLocalCache<Member[]>(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
+  const updatedList = currentList.map((m) => (m.id === memberId ? { ...m, ...updates } : m));
+  setLocalCache(CACHE_KEY_MEMBERS, updatedList);
+
+  try {
+    const docRef = doc(db, 'members', memberId);
+    await updateDoc(docRef, updates);
+  } catch (err) {
+    console.info('[MemberService] Firestore updateMember failed (Quota or offline). Saved locally:', err);
+  }
 }
 
 // Process Purchase Transaction for Member (Adds Points & Stamps, recalculates Tier)
@@ -198,17 +255,14 @@ export async function processMemberPurchase(
   const newStamps = (member.stamps || 0) + addedStamps;
   const newTier = calculateTier(newPoints, settings);
 
-  // Update member balance and tier
-  const docRef = doc(db, 'members', member.id);
-  await updateDoc(docRef, {
-    points: newPoints,
-    stamps: newStamps,
-    tier: newTier,
-  });
+  // Local cache update
+  const currentList = getLocalCache<Member[]>(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
+  const updatedList = currentList.map((m) =>
+    m.id === member.id ? { ...m, points: newPoints, stamps: newStamps, tier: newTier } : m
+  );
+  setLocalCache(CACHE_KEY_MEMBERS, updatedList);
 
-  // Log to member_history
   const historyId = `hist_${Date.now()}`;
-  const historyRef = doc(db, 'member_history', historyId);
   const historyItem: MemberHistory = {
     id: historyId,
     memberId: member.id,
@@ -221,7 +275,23 @@ export async function processMemberPurchase(
     stampsChange: addedStamps,
     amount: amount,
   };
-  await setDoc(historyRef, historyItem);
+
+  const currentHist = getLocalCache<MemberHistory[]>(CACHE_KEY_HISTORY, []);
+  setLocalCache(CACHE_KEY_HISTORY, [historyItem, ...currentHist]);
+
+  try {
+    const docRef = doc(db, 'members', member.id);
+    await updateDoc(docRef, {
+      points: newPoints,
+      stamps: newStamps,
+      tier: newTier,
+    });
+
+    const historyRef = doc(db, 'member_history', historyId);
+    await setDoc(historyRef, historyItem);
+  } catch (err) {
+    console.info('[MemberService] Firestore purchase update failed (Quota or offline). Saved locally:', err);
+  }
 
   return { addedPoints, addedStamps, newTier };
 }
@@ -237,18 +307,25 @@ export function subscribePromos(callback: (promos: Promo[]) => void) {
         snapshot.forEach((d) => {
           list.push({ id: d.id, ...d.data() } as Promo);
         });
+        setLocalCache(CACHE_KEY_PROMOS, list);
         callback(list);
       } else {
         // Seed default promos
         Promise.all(
           DEFAULT_PROMOS.map((p) => setDoc(doc(db, 'promos', p.id), p))
-        ).catch(console.error);
+        ).catch(() => {});
+        setLocalCache(CACHE_KEY_PROMOS, DEFAULT_PROMOS);
         callback(DEFAULT_PROMOS);
       }
     },
     (err) => {
-      console.warn('Error subscribing promos:', err);
-      callback(DEFAULT_PROMOS);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('Quota limit exceeded') || errMsg.includes('Quota exceeded') || errMsg.includes('resource-exhausted')) {
+        console.info('[MemberService] Firestore Quota exceeded. Using local cached Promos.');
+      } else {
+        console.warn('Notice on subscribing promos:', errMsg);
+      }
+      callback(getLocalCache(CACHE_KEY_PROMOS, DEFAULT_PROMOS));
     }
   );
 }
@@ -266,13 +343,32 @@ export async function savePromoInFirestore(promo: Partial<Promo> & { id?: string
     costStamps: promo.costStamps || 0,
     isActive: promo.isActive !== undefined ? promo.isActive : true,
   };
-  await setDoc(doc(db, 'promos', promoId), promoData, { merge: true });
+
+  const currentPromos = getLocalCache<Promo[]>(CACHE_KEY_PROMOS, DEFAULT_PROMOS);
+  const exists = currentPromos.some((p) => p.id === promoId);
+  const updatedPromos = exists
+    ? currentPromos.map((p) => (p.id === promoId ? promoData : p))
+    : [promoData, ...currentPromos];
+  setLocalCache(CACHE_KEY_PROMOS, updatedPromos);
+
+  try {
+    await setDoc(doc(db, 'promos', promoId), promoData, { merge: true });
+  } catch (err) {
+    console.info('[MemberService] Firestore savePromo failed (Quota or offline). Saved locally:', err);
+  }
   return promoId;
 }
 
 // Delete Promo
 export async function deletePromoInFirestore(promoId: string) {
-  await deleteDoc(doc(db, 'promos', promoId));
+  const currentPromos = getLocalCache<Promo[]>(CACHE_KEY_PROMOS, DEFAULT_PROMOS);
+  setLocalCache(CACHE_KEY_PROMOS, currentPromos.filter((p) => p.id !== promoId));
+
+  try {
+    await deleteDoc(doc(db, 'promos', promoId));
+  } catch (err) {
+    console.info('[MemberService] Firestore deletePromo failed (Quota or offline). Saved locally:', err);
+  }
 }
 
 // Redeem Promo
@@ -290,15 +386,14 @@ export async function redeemPromoForMember(
   const newPoints = member.points - promo.costPoints;
   const newStamps = member.stamps - promo.costStamps;
 
-  // Deduct balance
-  await updateDoc(doc(db, 'members', member.id), {
-    points: newPoints,
-    stamps: newStamps,
-  });
+  // Local cache
+  const currentList = getLocalCache<Member[]>(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
+  const updatedList = currentList.map((m) =>
+    m.id === member.id ? { ...m, points: newPoints, stamps: newStamps } : m
+  );
+  setLocalCache(CACHE_KEY_MEMBERS, updatedList);
 
-  // Log history
   const historyId = `hist_${Date.now()}`;
-  const historyRef = doc(db, 'member_history', historyId);
   const historyItem: MemberHistory = {
     id: historyId,
     memberId: member.id,
@@ -310,7 +405,19 @@ export async function redeemPromoForMember(
     pointsChange: -promo.costPoints,
     stampsChange: -promo.costStamps,
   };
-  await setDoc(historyRef, historyItem);
+
+  const currentHist = getLocalCache<MemberHistory[]>(CACHE_KEY_HISTORY, []);
+  setLocalCache(CACHE_KEY_HISTORY, [historyItem, ...currentHist]);
+
+  try {
+    await updateDoc(doc(db, 'members', member.id), {
+      points: newPoints,
+      stamps: newStamps,
+    });
+    await setDoc(doc(db, 'member_history', historyId), historyItem);
+  } catch (err) {
+    console.info('[MemberService] Firestore redeemPromo failed (Quota or offline). Saved locally:', err);
+  }
 
   return {
     success: true,
@@ -331,16 +438,25 @@ export function subscribeMemberHistory(
       snapshot.forEach((d) => {
         list.push({ id: d.id, ...d.data() } as MemberHistory);
       });
-      // Sort by date descending
       list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
+      setLocalCache(CACHE_KEY_HISTORY, list);
       if (memberId) {
         list = list.filter((h) => h.memberId === memberId);
       }
       callback(list);
     },
     (err) => {
-      console.warn('Error subscribing member history:', err);
-      callback([]);
+      const errMsg = String(err?.message || err);
+      if (errMsg.includes('Quota limit exceeded') || errMsg.includes('Quota exceeded') || errMsg.includes('resource-exhausted')) {
+        console.info('[MemberService] Firestore Quota exceeded. Using local cached Member History.');
+      } else {
+        console.warn('Notice on subscribing member history:', errMsg);
+      }
+      let list = getLocalCache<MemberHistory[]>(CACHE_KEY_HISTORY, []);
+      if (memberId) {
+        list = list.filter((h) => h.memberId === memberId);
+      }
+      callback(list);
     }
   );
 }
@@ -370,9 +486,18 @@ export async function resetMemberPinWithVerification(
     };
   }
 
-  await updateDoc(doc(db, 'members', found.id), {
-    pin: newPin,
-  });
+  // Local cache update
+  const currentList = getLocalCache<Member[]>(CACHE_KEY_MEMBERS, DEFAULT_MEMBERS);
+  const updatedList = currentList.map((m) => (m.id === found.id ? { ...m, pin: newPin } : m));
+  setLocalCache(CACHE_KEY_MEMBERS, updatedList);
+
+  try {
+    await updateDoc(doc(db, 'members', found.id), {
+      pin: newPin,
+    });
+  } catch (err) {
+    console.info('[MemberService] Firestore resetPin failed (Quota or offline). Saved locally:', err);
+  }
 
   return {
     success: true,
