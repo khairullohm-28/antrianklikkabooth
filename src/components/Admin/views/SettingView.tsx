@@ -4,6 +4,7 @@ import { PrintSettings } from '../../../types';
 import { TICKET_TEMPLATES } from '../../../data/defaultData';
 import { TicketReceiptView } from '../TicketReceiptView';
 import { getAvailableVoices } from '../../../utils/audio';
+import { processThermalLogoFile, processThermalLogoDataUrl } from '../../../utils/thermalLogoProcessor';
 import {
   Printer,
   KeyRound,
@@ -75,31 +76,67 @@ export const SettingView: React.FC = () => {
     createdAt: new Date().toISOString(),
   };
 
+  const [logoProcessing, setLogoProcessing] = useState(false);
+  const [logoThreshold, setLogoThreshold] = useState<number>(localPrintSettings.logoThreshold || 128);
+
   const handleSavePrintSettings = () => {
     updatePrintSettings(localPrintSettings);
     setSaveSuccess(true);
     setTimeout(() => setSaveSuccess(false), 2500);
   };
 
-  const handleLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran logo terlalu besar (maks 2MB).');
+    if (!file.type.startsWith('image/')) {
+      alert('Harap pilih file gambar (PNG/JPG/WEBP).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setLocalPrintSettings((prev) => ({
-          ...prev,
-          logoUrl: event.target?.result as string,
-        }));
-      }
-    };
-    reader.readAsDataURL(file);
+    setLogoProcessing(true);
+    try {
+      const bwDataUrl = await processThermalLogoFile(file, {
+        maxWidth: 250,
+        maxHeight: 250,
+        threshold: logoThreshold,
+      });
+
+      setLocalPrintSettings((prev) => ({
+        ...prev,
+        logoUrl: bwDataUrl,
+        showLogo: true,
+        logoThreshold: logoThreshold,
+      }));
+    } catch (err: any) {
+      alert('Gagal memproses gambar logo: ' + (err?.message || err));
+    } finally {
+      setLogoProcessing(false);
+    }
+  };
+
+  const handleReapplyThreshold = async (newThreshold: number) => {
+    setLogoThreshold(newThreshold);
+    if (!localPrintSettings.logoUrl) return;
+
+    setLogoProcessing(true);
+    try {
+      const bwDataUrl = await processThermalLogoDataUrl(localPrintSettings.logoUrl, {
+        maxWidth: 250,
+        maxHeight: 250,
+        threshold: newThreshold,
+      });
+
+      setLocalPrintSettings((prev) => ({
+        ...prev,
+        logoUrl: bwDataUrl,
+        logoThreshold: newThreshold,
+      }));
+    } catch (err) {
+      // Ignore fallback
+    } finally {
+      setLogoProcessing(false);
+    }
   };
 
   const handleChangePinSubmit = (e: React.FormEvent) => {
@@ -174,6 +211,126 @@ export const SettingView: React.FC = () => {
                     <span className="text-[10px] text-slate-500 font-medium block">{tmpl.description}</span>
                   </button>
                 ))}
+              </div>
+            </div>
+
+            {/* LOGO CUSTOM TICKET (THERMAL OPTIMIZED) SECTION */}
+            <div className="p-4 bg-slate-900 text-white rounded-2xl border border-slate-800 space-y-4 shadow-lg">
+              <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-2 pb-3 border-b border-slate-800">
+                <div className="flex items-center gap-2.5">
+                  <div className="w-8 h-8 rounded-xl bg-red-500/20 text-red-400 flex items-center justify-center font-bold shrink-0">
+                    <Upload className="w-4 h-4" />
+                  </div>
+                  <div>
+                    <h3 className="text-xs font-black uppercase text-white tracking-wide">
+                      Upload Logo Tiket (Thermal Optimized B/W)
+                    </h3>
+                    <p className="text-[11px] text-slate-400">
+                      Otomatis dikompres (maks 250px) &amp; dikonversi ke Hitam-Putih murni (1-bit) agar cetak thermal sangat tajam
+                    </p>
+                  </div>
+                </div>
+
+                <label className="flex items-center gap-2 cursor-pointer bg-slate-800 px-3 py-1.5 rounded-xl border border-slate-700 text-xs font-bold hover:bg-slate-700 shrink-0">
+                  <input
+                    type="checkbox"
+                    checked={localPrintSettings.showLogo ?? true}
+                    onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, showLogo: e.target.checked })}
+                    className="accent-red-500 rounded"
+                  />
+                  <span>{localPrintSettings.showLogo ?? true ? 'Logo Tampil' : 'Logo Sembunyi'}</span>
+                </label>
+              </div>
+
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-4 items-center">
+                {/* Upload & Controls */}
+                <div className="space-y-3">
+                  <div>
+                    <label className="text-xs font-bold text-slate-300 block mb-1">
+                      Pilih Logo Baru (PNG / JPG)
+                    </label>
+                    <div className="flex flex-wrap items-center gap-2">
+                      <label className="px-4 py-2.5 bg-red-600 hover:bg-red-500 text-white font-extrabold text-xs rounded-xl cursor-pointer flex items-center gap-2 shadow-md transition-all active:scale-95">
+                        <Upload className="w-4 h-4" />
+                        <span>{logoProcessing ? 'Memproses B/W...' : 'Upload File Logo'}</span>
+                        <input
+                          type="file"
+                          accept="image/png, image/jpeg, image/webp"
+                          onChange={handleLogoUpload}
+                          disabled={logoProcessing}
+                          className="hidden"
+                        />
+                      </label>
+
+                      {localPrintSettings.logoUrl && (
+                        <button
+                          type="button"
+                          onClick={() => setLocalPrintSettings({ ...localPrintSettings, logoUrl: '' })}
+                          className="px-3 py-2.5 bg-slate-800 hover:bg-rose-950/80 text-rose-400 border border-slate-700 rounded-xl text-xs font-bold flex items-center gap-1.5 transition-all"
+                        >
+                          <Trash2 className="w-3.5 h-3.5" />
+                          <span>Hapus Logo</span>
+                        </button>
+                      )}
+                    </div>
+                  </div>
+
+                  {/* Threshold & Size Sliders if logo present */}
+                  {localPrintSettings.logoUrl && (
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 pt-2 border-t border-slate-800">
+                      <div>
+                        <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 mb-1">
+                          <span>Threshold B/W (Hitam-Putih)</span>
+                          <span className="font-mono text-red-400">{logoThreshold}</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="50"
+                          max="200"
+                          value={logoThreshold}
+                          onChange={(e) => handleReapplyThreshold(Number(e.target.value))}
+                          className="w-full accent-red-500 cursor-pointer"
+                        />
+                      </div>
+
+                      <div>
+                        <div className="flex justify-between items-center text-[11px] font-bold text-slate-300 mb-1">
+                          <span>Ukuran Tampil Logo (px)</span>
+                          <span className="font-mono text-red-400">{localPrintSettings.logoWidth || 50}px</span>
+                        </div>
+                        <input
+                          type="range"
+                          min="24"
+                          max="120"
+                          value={localPrintSettings.logoWidth || 50}
+                          onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, logoWidth: Number(e.target.value) })}
+                          className="w-full accent-red-500 cursor-pointer"
+                        />
+                      </div>
+                    </div>
+                  )}
+                </div>
+
+                {/* Logo Preview Box */}
+                <div className="bg-slate-950 p-3.5 rounded-xl border border-slate-800 flex flex-col items-center justify-center min-h-[110px]">
+                  <span className="text-[10px] font-bold uppercase text-slate-400 mb-2">
+                    Preview Logo Thermal Monochrome (1-Bit)
+                  </span>
+                  {(localPrintSettings.showLogo ?? true) && localPrintSettings.logoUrl ? (
+                    <div className="p-2.5 bg-white rounded-lg border border-slate-300 flex items-center justify-center shadow-inner">
+                      <img
+                        src={localPrintSettings.logoUrl}
+                        alt="Logo Thermal Preview"
+                        style={{ width: `${localPrintSettings.logoWidth || 50}px`, maxHeight: '80px' }}
+                        className="object-contain"
+                      />
+                    </div>
+                  ) : (
+                    <p className="text-xs text-slate-500 font-medium italic text-center">
+                      {!localPrintSettings.logoUrl ? 'Belum ada logo terpasang' : 'Logo tersembunyi (Non-aktif)'}
+                    </p>
+                  )}
+                </div>
               </div>
             </div>
 

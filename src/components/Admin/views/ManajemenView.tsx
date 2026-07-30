@@ -40,7 +40,6 @@ export const ManajemenView: React.FC = () => {
       code: newBoothCode.trim().toUpperCase(),
       avgTimePerSession: Number(newBoothAvg) || 5,
     };
-    console.log('[BoothManagement] [ManajemenView] Pre-save payload for addBooth:', payload);
     addBooth(payload);
     setNewBoothName('');
     setNewBoothCode('');
@@ -61,7 +60,6 @@ export const ManajemenView: React.FC = () => {
       code: editCode.trim().toUpperCase(),
       avgTimePerSession: Number(editAvg) || 5,
     };
-    console.log(`[BoothManagement] [ManajemenView] Pre-save payload for editBooth (${boothId}):`, payload);
     editBooth(boothId, payload);
     setEditingBoothId(null);
   };

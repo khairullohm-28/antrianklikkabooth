@@ -9,6 +9,8 @@ export interface PrinterTicketData {
   boothCode: string;
   dateStr: string;
   timeStr: string;
+  logoUrl?: string;
+  showLogo?: boolean;
   headerTitle?: string;
   footerMessage?: string;
   qrCodeUrl?: string;
@@ -72,6 +74,11 @@ export const formatHTML = (html: string): string => {
  */
 export const generateTicketBAFString = (data: PrinterTicketData): string => {
   let baf = '';
+
+  // Logo (Thermal Optimized B/W)
+  if ((data.showLogo ?? true) && data.logoUrl) {
+    baf += IMAGE(data.logoUrl);
+  }
 
   // Header Title
   baf += BAF.center(data.headerTitle || 'PHOTOBOOTH QUEUE TICKET');

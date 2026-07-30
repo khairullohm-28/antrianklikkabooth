@@ -52,7 +52,9 @@ export type TicketAlign = 'center' | 'left' | 'right';
 export interface PrintSettings {
   // Logo
   logoUrl: string;
+  showLogo?: boolean; // Toggle ON/OFF for displaying logo on ticket
   logoWidth?: number; // e.g. 48px
+  logoThreshold?: number; // B/W binarization threshold (default 128)
 
   // Static Texts
   headerTitle: string;

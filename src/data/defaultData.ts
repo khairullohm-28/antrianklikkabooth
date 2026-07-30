@@ -35,7 +35,9 @@ export const DEFAULT_BOOTHS: Booth[] = [
 
 export const DEFAULT_PRINT_SETTINGS: PrintSettings = {
   logoUrl: 'https://images.unsplash.com/photo-1516035069371-29a1b244cc32?w=120&auto=format&fit=crop&q=80',
+  showLogo: true,
   logoWidth: 50,
+  logoThreshold: 128,
   headerTitle: 'NOMOR ANTRIAN',
   subHeaderTitle: 'PHOTOBOOTH QUEUE TICKET',
   branchName: 'Photobooth Studio - Cabang Utama',

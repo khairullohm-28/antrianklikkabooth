@@ -172,7 +172,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
         <div className="w-full flex flex-row items-center justify-between gap-2 text-center my-auto">
           {/* LEFT COLUMN: Header, Logo, Number, Booth */}
           <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pr-1 border-r border-dashed border-black/50">
-            {settings.logoUrl && (
+            {(settings.showLogo ?? true) && settings.logoUrl && (
               <img
                 src={settings.logoUrl}
                 alt="Photobooth Logo"
@@ -245,7 +245,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
         /* PORTRAIT VERTICAL STREAMLINED LAYOUT */
         <div className="w-full flex flex-col items-center justify-center space-y-0.5">
           {/* 1. LOGO */}
-          {settings.logoUrl && (
+          {(settings.showLogo ?? true) && settings.logoUrl && (
             <img
               src={settings.logoUrl}
               alt="Photobooth Logo"

@@ -54,6 +54,8 @@ export const TicketPrintModal: React.FC = () => {
     boothCode: booth?.code || '',
     dateStr: btDateStr,
     timeStr: btTimeStr,
+    logoUrl: printSettings.logoUrl,
+    showLogo: printSettings.showLogo,
     headerTitle: printSettings.headerTitle,
     footerMessage: printSettings.footerText,
     qrCodeUrl: customerQrUrl,

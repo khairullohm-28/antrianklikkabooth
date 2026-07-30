@@ -1,6 +1,7 @@
 import React, { useState } from 'react';
 import { useQueue } from '../../context/QueueContext';
 import { getPaperDimensionSpec } from '../../utils/paperDimensions';
+import { processThermalLogoFile } from '../../utils/thermalLogoProcessor';
 import {
   Booth,
   PrintSettings,
@@ -102,7 +103,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
       code: newBoothCode.trim().toUpperCase(),
       avgTimePerSession: Number(newBoothAvg) || 5,
     };
-    console.log('[BoothManagement] [SettingsModal] Pre-save payload for addBooth:', payload);
     addBooth(payload);
     setNewBoothName('');
     setNewBoothCode('');
@@ -121,7 +121,6 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
       name: editName.trim(),
       code: editCode.trim().toUpperCase(),
     };
-    console.log(`[BoothManagement] [SettingsModal] Pre-save payload for editBooth (${boothId}):`, payload);
     editBooth(boothId, payload);
     setEditingBoothId(null);
   };
@@ -140,25 +139,30 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
   };
 
   // Handle Logo Upload File (Convert to Base64)
-  const handleLogoFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleLogoFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
     if (!file) return;
 
-    if (file.size > 2 * 1024 * 1024) {
-      alert('Ukuran file logo terlalu besar. Harap gunakan gambar di bawah 2MB.');
+    if (!file.type.startsWith('image/')) {
+      alert('Harap pilih file gambar (PNG/JPG/WEBP).');
       return;
     }
 
-    const reader = new FileReader();
-    reader.onload = (event) => {
-      if (event.target?.result) {
-        setLocalPrintSettings((prev) => ({
-          ...prev,
-          logoUrl: event.target?.result as string,
-        }));
-      }
-    };
-    reader.readAsDataURL(file);
+    try {
+      const bwDataUrl = await processThermalLogoFile(file, {
+        maxWidth: 250,
+        maxHeight: 250,
+        threshold: localPrintSettings.logoThreshold || 128,
+      });
+
+      setLocalPrintSettings((prev) => ({
+        ...prev,
+        logoUrl: bwDataUrl,
+        showLogo: true,
+      }));
+    } catch (err: any) {
+      alert('Gagal memproses gambar logo: ' + (err?.message || err));
+    }
   };
 
   const handleMonitorLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {

@@ -229,14 +229,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             updatedAt: new Date().toISOString(),
           })
         );
-        console.log('[QueueContext] [Sync Debug] Writing to Firestore doc "photobooth/appState":', {
-          docPath: 'photobooth/appState',
-          boothsCount: sanitizedPayload.booths.length,
-          boothSummary: sanitizedPayload.booths.map((b: any) => `${b.id}: "${b.name}" (${b.code})`),
-          updatedAt: sanitizedPayload.updatedAt,
-        });
         await setDoc(docRef, sanitizedPayload, { merge: true });
-        console.log('[QueueContext] [Sync Debug] Firestore write SUCCESSFUL for photobooth/appState.');
       } catch (err: any) {
         const errMsg = String(err?.message || err);
         const errCode = String(err?.code || '');
@@ -432,14 +425,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               setLastFirestoreUpdatedAt(data.updatedAt);
             }
 
-            // Log real-time snapshot sync
-            console.log('[QueueTrace FIRESTORE_SYNC] Snapshot synced:', {
-              timestamp: new Date().toLocaleTimeString('id-ID'),
-              boothsCount: Array.isArray(data.booths) ? data.booths.length : 0,
-              ticketsCount: Array.isArray(data.tickets) ? data.tickets.length : 0,
-              calledTickets: Array.isArray(data.tickets) ? data.tickets.filter((t: any) => t.status === 'called').map((t: any) => t.ticketNumber) : [],
-              lastCalled: data.lastCalledTicket?.ticketNumber || 'None',
-            });
             if (Array.isArray(data.booths)) {
               setBooths((prev) => (JSON.stringify(prev) === JSON.stringify(data.booths) ? prev : data.booths));
               try { localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(data.booths)); } catch {}
@@ -571,19 +556,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         .sort((a, b) => a.sequence - b.sequence);
 
       if (waiting.length === 0) {
-        console.log(`[QueueTrace CALL_NEXT] No waiting tickets for booth ${booth.name}`);
         return null;
       }
 
       const ticketToCall = waiting[0];
       const nowIso = new Date().toISOString();
-
-      const prevCalled = tickets.filter((t) => t.boothId === boothId && t.status === 'called');
-      if (prevCalled.length > 0) {
-        console.log(`[QueueTrace CALL_NEXT] Transitioning previous called tickets to completed for booth ${booth.name}:`, prevCalled.map(t => t.ticketNumber));
-      }
-
-      console.log(`[QueueTrace CALL_NEXT] Calling ticket ${ticketToCall.ticketNumber} for booth ${booth.name}`);
 
       const updatedTickets = tickets.map((t) => {
         if (t.boothId === boothId && (t.status === 'called' || (t.status as string) === 'serving')) {
@@ -847,7 +824,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const editBooth = useCallback(
     (boothId: string, updated: Partial<Booth>) => {
-      console.log('[QueueContext] [editBooth] Pre-save edit booth payload:', { boothId, updated });
       const updatedBooths = booths.map((b) => (b.id === boothId ? { ...b, ...updated } : b));
       const targetBooth = updatedBooths.find((b) => b.id === boothId);
 
