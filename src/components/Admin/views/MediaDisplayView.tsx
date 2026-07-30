@@ -1,7 +1,7 @@
 import React, { useState, useEffect } from 'react';
 import { useQueue } from '../../../context/QueueContext';
 import { PrintSettings } from '../../../types';
-import { announceQueueVoice, playChimeSound } from '../../../utils/audio';
+import { announceQueueVoice, playChimeSound, getAvailableVoices } from '../../../utils/audio';
 import {
   Tv,
   Sparkles,
@@ -22,10 +22,26 @@ export const MediaDisplayView: React.FC = () => {
   const [localSettings, setLocalSettings] = useState<PrintSettings>(printSettings);
   const [saveDisplaySuccess, setSaveDisplaySuccess] = useState(false);
   const [saveAudioSuccess, setSaveAudioSuccess] = useState(false);
+  const [availableVoices, setAvailableVoices] = useState<SpeechSynthesisVoice[]>([]);
 
   useEffect(() => {
     setLocalSettings(printSettings);
   }, [printSettings]);
+
+  useEffect(() => {
+    setAvailableVoices(getAvailableVoices());
+    if (typeof window !== 'undefined' && 'speechSynthesis' in window) {
+      const handleVoicesChanged = () => {
+        setAvailableVoices(getAvailableVoices());
+      };
+      window.speechSynthesis.onvoiceschanged = handleVoicesChanged;
+      return () => {
+        if ('speechSynthesis' in window) {
+          window.speechSynthesis.onvoiceschanged = null;
+        }
+      };
+    }
+  }, []);
 
   const handleMonitorLogoUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -220,6 +236,46 @@ export const MediaDisplayView: React.FC = () => {
               >
                 {soundEnabled ? 'Suara AKTIF' : 'Suara NONAKTIF'}
               </button>
+            </div>
+
+            {/* Voice Narrator & Speed Settings */}
+            <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
+              <h3 className="font-bold text-slate-900 text-xs flex items-center gap-1.5">
+                <Volume2 className="w-4 h-4 text-emerald-600" />
+                Pengaturan Suara Panggilan Antrian (Text-To-Speech)
+              </h3>
+              <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">Pilih Suara Narator (Voice)</label>
+                  <select
+                    value={localSettings.speechVoiceName || ''}
+                    onChange={(e) => setLocalSettings({ ...localSettings, speechVoiceName: e.target.value })}
+                    className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl font-bold cursor-pointer focus:ring-2 focus:ring-red-500"
+                  >
+                    <option value="">Otomatis (Bahasa Indonesia Utama)</option>
+                    {availableVoices.map((v, idx) => (
+                      <option key={`${v.name}-${idx}`} value={v.name}>
+                        {v.name} ({v.lang})
+                      </option>
+                    ))}
+                  </select>
+                </div>
+
+                <div>
+                  <label className="text-xs font-bold text-slate-700 block mb-1">
+                    Kecepatan Suara Panggilan: {localSettings.speechRate || 0.88}x
+                  </label>
+                  <input
+                    type="range"
+                    min="0.5"
+                    max="1.3"
+                    step="0.05"
+                    value={localSettings.speechRate || 0.88}
+                    onChange={(e) => setLocalSettings({ ...localSettings, speechRate: parseFloat(e.target.value) })}
+                    className="w-full accent-red-600 cursor-pointer"
+                  />
+                </div>
+              </div>
             </div>
 
             {/* Test Audio Controls */}

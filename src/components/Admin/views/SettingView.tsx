@@ -390,48 +390,6 @@ export const SettingView: React.FC = () => {
                 </select>
               </div>
 
-              {/* VOICE / SPEECH SYNTHESIS SETTINGS */}
-              <div className="sm:col-span-2 pt-3 border-t border-slate-100 space-y-3">
-                <div className="flex items-center gap-2">
-                  <Volume2 className="w-4 h-4 text-red-600" />
-                  <label className="text-xs font-black text-slate-800 uppercase tracking-wider block">
-                    Pengaturan Suara Panggilan Antrian (Konsistensi Antar Perangkat)
-                  </label>
-                </div>
-
-                <div className="grid grid-cols-1 sm:grid-cols-2 gap-3">
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">Pilih Suara Narator (Voice)</label>
-                    <select
-                      value={localPrintSettings.speechVoiceName || ''}
-                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, speechVoiceName: e.target.value })}
-                      className="w-full px-3.5 py-2.5 bg-slate-50 border border-slate-300 rounded-xl text-xs font-bold cursor-pointer"
-                    >
-                      <option value="">Otomatis (Bahasa Indonesia Utama)</option>
-                      {availableVoices.map((v, idx) => (
-                        <option key={`${v.name}-${idx}`} value={v.name}>
-                          {v.name} ({v.lang})
-                        </option>
-                      ))}
-                    </select>
-                  </div>
-
-                  <div>
-                    <label className="text-xs font-bold text-slate-700 block mb-1">
-                      Kecepatan Suara Panggilan: {localPrintSettings.speechRate || 0.88}x
-                    </label>
-                    <input
-                      type="range"
-                      min="0.5"
-                      max="1.3"
-                      step="0.05"
-                      value={localPrintSettings.speechRate || 0.88}
-                      onChange={(e) => setLocalPrintSettings({ ...localPrintSettings, speechRate: parseFloat(e.target.value) })}
-                      className="w-full accent-red-600 cursor-pointer"
-                    />
-                  </div>
-                </div>
-              </div>
             </div>
 
             {/* LIVE RECEIPT PREVIEW BOX */}

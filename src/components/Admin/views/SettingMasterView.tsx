@@ -254,7 +254,26 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
           <div className="space-y-6">
             {/* BRONZE */}
             <div className="p-4 bg-stone-50 border border-stone-200 rounded-2xl space-y-3">
-              <h4 className="font-extrabold text-amber-900 text-xs uppercase tracking-wider">BRONZE MEMBER</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-amber-900 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-amber-800" />
+                  <span>BRONZE MEMBER</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTierForm({
+                      ...tierForm,
+                      tierBenefits: { ...tierForm.tierBenefits, bronzeMin: '', bronze: '' },
+                    })
+                  }
+                  className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                  title="Hapus / Kosongkan Level Bronze Member"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Level</span>
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Syarat Level Bronze</label>
@@ -267,6 +286,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, bronzeMin: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>
@@ -281,6 +301,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, bronze: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>
@@ -289,7 +310,26 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
 
             {/* GOLD */}
             <div className="p-4 bg-amber-50 border border-amber-200 rounded-2xl space-y-3">
-              <h4 className="font-extrabold text-amber-950 text-xs uppercase tracking-wider">GOLD MEMBER</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-amber-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-amber-600" />
+                  <span>GOLD MEMBER</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTierForm({
+                      ...tierForm,
+                      tierBenefits: { ...tierForm.tierBenefits, goldMin: '', gold: '' },
+                    })
+                  }
+                  className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                  title="Hapus / Kosongkan Level Gold Member"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Level</span>
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Syarat Level Gold</label>
@@ -302,6 +342,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, goldMin: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>
@@ -316,6 +357,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, gold: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>
@@ -324,7 +366,26 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
 
             {/* DIAMOND */}
             <div className="p-4 bg-cyan-50 border border-cyan-200 rounded-2xl space-y-3">
-              <h4 className="font-extrabold text-cyan-950 text-xs uppercase tracking-wider">DIAMOND VIP MEMBER</h4>
+              <div className="flex items-center justify-between">
+                <h4 className="font-extrabold text-cyan-950 text-xs uppercase tracking-wider flex items-center gap-1.5">
+                  <Crown className="w-4 h-4 text-cyan-600" />
+                  <span>DIAMOND VIP MEMBER</span>
+                </h4>
+                <button
+                  type="button"
+                  onClick={() =>
+                    setTierForm({
+                      ...tierForm,
+                      tierBenefits: { ...tierForm.tierBenefits, diamondMin: '', diamond: '' },
+                    })
+                  }
+                  className="p-1 text-rose-600 hover:bg-rose-100 rounded-lg text-xs font-bold transition-all flex items-center gap-1"
+                  title="Hapus / Kosongkan Level Diamond VIP Member"
+                >
+                  <Trash2 className="w-3.5 h-3.5" />
+                  <span>Hapus Level</span>
+                </button>
+              </div>
               <div className="grid grid-cols-1 md:grid-cols-2 gap-3 text-xs">
                 <div>
                   <label className="block font-bold text-slate-700 mb-1">Syarat Level Diamond VIP</label>
@@ -337,6 +398,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, diamondMin: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>
@@ -351,6 +413,7 @@ export const SettingMasterView: React.FC<SettingMasterViewProps> = ({
                         tierBenefits: { ...tierForm.tierBenefits, diamond: e.target.value },
                       })
                     }
+                    placeholder="(Kosong = Tidak Aktif / Dihapus)"
                     className="w-full px-3 py-2 border border-slate-300 rounded-xl font-medium"
                   />
                 </div>

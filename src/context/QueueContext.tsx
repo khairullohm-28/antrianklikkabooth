@@ -201,7 +201,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const payloadLogs = (newLogs || []).slice(0, 15);
 
       // Deduplicate saves to eliminate redundant Firestore write quota usage
-      const payloadHash = `${newBooths.length}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
+      const payloadHash = `${JSON.stringify(newBooths.map(b => [b.id, b.name, b.code, b.avgTimePerSession, b.status]))}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
       if (lastSavedHashRef.current === payloadHash) {
         return;
       }

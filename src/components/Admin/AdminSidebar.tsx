@@ -57,7 +57,7 @@ export const navGroups: NavGroup[] = [
       },
       {
         id: 'operasional' as AdminTab,
-        label: 'MEMBER LOYALTY',
+        label: 'OPERASIONAL',
         icon: PlaySquare,
       },
     ],
