@@ -131,7 +131,7 @@ export const AdminDashboard: React.FC = () => {
   const logoUrl = printSettings?.monitorLogoUrl;
 
   return (
-    <div className="min-h-screen bg-slate-100/80 flex flex-col md:flex-row font-sans -m-4 sm:-m-6">
+    <div className="min-h-screen bg-slate-100/80 flex flex-col md:flex-row font-sans w-full">
       {/* MOBILE TOP BAR WITH HAMBURGER */}
       <div className="md:hidden bg-slate-900 text-white p-4 flex items-center justify-between sticky top-0 z-40 shadow-md">
         <div className="flex items-center gap-2.5">
@@ -173,7 +173,7 @@ export const AdminDashboard: React.FC = () => {
       />
 
       {/* MAIN CONTENT AREA */}
-      <main className="flex-1 p-4 sm:p-6 md:p-8 overflow-x-hidden max-w-7xl mx-auto w-full">
+      <main className="flex-1 p-4 sm:p-6 lg:p-8 overflow-x-auto w-full max-w-full min-w-0">
         {activeTab === 'beranda' && <BerandaView />}
         {activeTab === 'operasional' && (
           <OperasionalView

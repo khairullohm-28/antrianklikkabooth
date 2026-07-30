@@ -121,7 +121,7 @@ export const OperasionalView: React.FC<OperasionalViewProps> = ({
         </div>
 
         {booths.length > 0 ? (
-          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-5">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 2xl:grid-cols-4 gap-4 sm:gap-5">
             {booths.map((booth) => (
               <BoothCard key={booth.id} booth={booth} onEditBooth={onEditBooth} />
             ))}

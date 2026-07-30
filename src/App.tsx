@@ -43,12 +43,69 @@ const MainContent: React.FC = () => {
     );
   }
 
+  if (activeTab === 'admin') {
+    return (
+      <div className="min-h-screen w-full bg-slate-100/80 text-slate-900 font-sans flex flex-col justify-between selection:bg-rose-500 selection:text-white">
+        <Suspense fallback={<DashboardLoadingFallback />}>
+          <AdminDashboard />
+        </Suspense>
+
+        {/* Footer Nav Bar (View Switcher) */}
+        <footer className="bg-white/90 backdrop-blur-md border-t border-slate-200 py-3 text-center text-xs text-slate-500 print:hidden shrink-0">
+          <div className="w-full px-4 sm:px-8 flex flex-col sm:flex-row items-center justify-between gap-3">
+            <p className="font-medium text-slate-500 text-[11px]">© 2026 Photobooth Studio. Dedicated Photobooth Queue System.</p>
+
+            <div className="flex items-center gap-2 font-bold text-slate-600 bg-slate-100/80 px-3 py-1 rounded-2xl border border-slate-200 overflow-x-auto max-w-full">
+              <button
+                onClick={() => setActiveTab('admin')}
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'admin' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
+                }`}
+              >
+                <LayoutDashboard className="w-3.5 h-3.5" />
+                <span>Admin</span>
+              </button>
+              <button
+                onClick={() => setActiveTab('customer')}
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'customer' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
+                }`}
+              >
+                <UserCheck className="w-3.5 h-3.5" />
+                <span>Pengguna</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('member')}
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'member' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
+                }`}
+              >
+                <Crown className="w-3.5 h-3.5 text-amber-400" />
+                <span>Portal Member</span>
+              </button>
+
+              <button
+                onClick={() => setActiveTab('monitor')}
+                className={`hover:text-red-600 px-2.5 py-1 rounded-xl transition-all flex items-center gap-1.5 shrink-0 ${
+                  activeTab === 'monitor' ? 'bg-red-600 text-white font-extrabold shadow-sm' : ''
+                }`}
+              >
+                <Tv className="w-3.5 h-3.5" />
+                <span>Monitor TV</span>
+              </button>
+            </div>
+          </div>
+        </footer>
+      </div>
+    );
+  }
+
   return (
     <div className="min-h-screen bg-rose-50/30 text-slate-900 font-sans flex flex-col justify-between selection:bg-rose-500 selection:text-white">
       <div>
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
           <Suspense fallback={<DashboardLoadingFallback />}>
-            {activeTab === 'admin' && <AdminDashboard />}
             {activeTab === 'customer' && <CustomerDashboard />}
             {activeTab === 'member' && <MemberContainer />}
           </Suspense>
