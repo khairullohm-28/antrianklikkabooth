@@ -64,6 +64,12 @@ interface QueueContextType {
 
   // Firebase Quota & Offline state
   isQuotaExceeded: boolean;
+
+  // Sync Debug State
+  rawFirestoreBooths: Booth[];
+  isFirestoreSynced: boolean;
+  lastFirestoreUpdatedAt: string | null;
+  forceSyncToFirestore: () => Promise<void>;
 }
 
 const QueueContext = createContext<QueueContextType | undefined>(undefined);
@@ -184,6 +190,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const isQuotaExceededRef = useRef<boolean>(false);
   const lastSavedHashRef = useRef<string>('');
   const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
+  const [rawFirestoreBooths, setRawFirestoreBooths] = useState<Booth[]>([]);
+  const [lastFirestoreUpdatedAt, setLastFirestoreUpdatedAt] = useState<string | null>(null);
 
   // Save helper for Firebase Firestore with memoized deduplication
   const saveToFirebase = useCallback(
@@ -201,7 +209,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const payloadLogs = (newLogs || []).slice(0, 15);
 
       // Deduplicate saves to eliminate redundant Firestore write quota usage
-      const payloadHash = `${JSON.stringify(newBooths.map(b => [b.id, b.name, b.code, b.avgTimePerSession, b.status]))}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
+      const payloadHash = `${JSON.stringify(newBooths)}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
       if (lastSavedHashRef.current === payloadHash) {
         return;
       }
@@ -210,19 +218,25 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         lastSavedHashRef.current = payloadHash;
         lastMutationTimeRef.current = Date.now();
         const docRef = doc(db, 'photobooth', 'appState');
-        await setDoc(
-          docRef,
-          {
+        const sanitizedPayload = JSON.parse(
+          JSON.stringify({
             booths: newBooths,
             tickets: newTickets,
             printSettings: newPrint,
             logs: payloadLogs,
             adminPin: newAdminPin,
-            lastCalledTicket: targetLastCalled,
+            lastCalledTicket: targetLastCalled || null,
             updatedAt: new Date().toISOString(),
-          },
-          { merge: true }
+          })
         );
+        console.log('[QueueContext] [Sync Debug] Writing to Firestore doc "photobooth/appState":', {
+          docPath: 'photobooth/appState',
+          boothsCount: sanitizedPayload.booths.length,
+          boothSummary: sanitizedPayload.booths.map((b: any) => `${b.id}: "${b.name}" (${b.code})`),
+          updatedAt: sanitizedPayload.updatedAt,
+        });
+        await setDoc(docRef, sanitizedPayload, { merge: true });
+        console.log('[QueueContext] [Sync Debug] Firestore write SUCCESSFUL for photobooth/appState.');
       } catch (err: any) {
         const errMsg = String(err?.message || err);
         const errCode = String(err?.code || '');
@@ -231,7 +245,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
           setIsQuotaExceeded(true);
           console.info('[QueueContext] Firebase Firestore quota limit reached. Seamlessly switched to Local Synchronization (BroadcastChannel & LocalStorage).');
         } else {
-          console.warn('Firebase save error:', err);
+          console.warn('[QueueContext] Firebase save error:', err);
         }
       }
     },
@@ -408,17 +422,25 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     const unsubscribe = onSnapshot(
       docRef,
       (snapshot) => {
-        // Skip updating state if local user action occurred within the last 1.2 seconds
-        if (Date.now() - lastMutationTimeRef.current < 1200) {
-          console.log('[QueueTrace FIRESTORE_SYNC] Skipping snapshot due to recent local mutation (<1200ms)');
-          return;
-        }
-
         if (snapshot.exists()) {
           const data = snapshot.data();
           if (data) {
+            if (Array.isArray(data.booths)) {
+              setRawFirestoreBooths(data.booths);
+            }
+            if (data.updatedAt) {
+              setLastFirestoreUpdatedAt(data.updatedAt);
+            }
+
+            // Skip updating local React state if local user action occurred within the last 1.2 seconds
+            if (Date.now() - lastMutationTimeRef.current < 1200) {
+              console.log('[QueueTrace FIRESTORE_SYNC] Skipping snapshot state override due to recent local mutation (<1200ms)');
+              return;
+            }
+
             console.log('[QueueTrace FIRESTORE_SYNC] Snapshot synced:', {
               timestamp: new Date().toLocaleTimeString('id-ID'),
+              boothsCount: Array.isArray(data.booths) ? data.booths.length : 0,
               ticketsCount: Array.isArray(data.tickets) ? data.tickets.length : 0,
               calledTickets: Array.isArray(data.tickets) ? data.tickets.filter((t: any) => t.status === 'called').map((t: any) => t.ticketNumber) : [],
               lastCalled: data.lastCalledTicket?.ticketNumber || 'None',
@@ -939,6 +961,13 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     }
   }, []);
 
+  const forceSyncToFirestore = useCallback(async () => {
+    lastSavedHashRef.current = '';
+    await saveToFirebase(booths, tickets, printSettings, logs, adminPin, lastCalledTicket);
+  }, [saveToFirebase, booths, tickets, printSettings, logs, adminPin, lastCalledTicket]);
+
+  const isFirestoreSynced = JSON.stringify(booths) === JSON.stringify(rawFirestoreBooths);
+
   return (
     <QueueContext.Provider
       value={{
@@ -978,6 +1007,11 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         soundEnabled,
         setSoundEnabled,
         isQuotaExceeded,
+
+        rawFirestoreBooths,
+        isFirestoreSynced,
+        lastFirestoreUpdatedAt,
+        forceSyncToFirestore,
       }}
     >
       {children}
