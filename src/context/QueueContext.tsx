@@ -208,8 +208,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const targetLastCalled = activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket;
       const payloadLogs = (newLogs || []).slice(0, 15);
 
-      // Deduplicate saves to eliminate redundant Firestore write quota usage
-      const payloadHash = `${JSON.stringify(newBooths)}-${newTickets.length}-${JSON.stringify(newTickets.map(t => [t.id, t.status]))}-${payloadLogs.length}-${newAdminPin}-${targetLastCalled?.id || ''}`;
+      // Deduplicate saves to eliminate redundant Firestore write quota usage while capturing all mutations
+      const payloadHash = `${JSON.stringify(newBooths)}|${JSON.stringify(newTickets)}|${JSON.stringify(targetLastCalled)}|${newAdminPin}`;
       if (lastSavedHashRef.current === payloadHash) {
         return;
       }
@@ -432,12 +432,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
               setLastFirestoreUpdatedAt(data.updatedAt);
             }
 
-            // Skip updating local React state if local user action occurred within the last 1.2 seconds
-            if (Date.now() - lastMutationTimeRef.current < 1200) {
-              console.log('[QueueTrace FIRESTORE_SYNC] Skipping snapshot state override due to recent local mutation (<1200ms)');
-              return;
-            }
-
+            // Log real-time snapshot sync
             console.log('[QueueTrace FIRESTORE_SYNC] Snapshot synced:', {
               timestamp: new Date().toLocaleTimeString('id-ID'),
               boothsCount: Array.isArray(data.booths) ? data.booths.length : 0,
@@ -839,6 +834,8 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         themeColor: boothData.themeColor || randomColor,
       };
 
+      console.log('[QueueContext] [addBooth] Pre-save booth payload:', newBooth);
+
       const updatedBooths = [...booths, newBooth];
       const updatedLogs = addLog('ADD_BOOTH', `Menambah booth baru "${newBooth.name}" (${newBooth.code})`, newBooth.name);
 
@@ -850,6 +847,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const editBooth = useCallback(
     (boothId: string, updated: Partial<Booth>) => {
+      console.log('[QueueContext] [editBooth] Pre-save edit booth payload:', { boothId, updated });
       const updatedBooths = booths.map((b) => (b.id === boothId ? { ...b, ...updated } : b));
       const targetBooth = updatedBooths.find((b) => b.id === boothId);
 

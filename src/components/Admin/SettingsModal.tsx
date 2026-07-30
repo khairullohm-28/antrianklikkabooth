@@ -97,11 +97,13 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
   const handleAddBooth = (e: React.FormEvent) => {
     e.preventDefault();
     if (!newBoothName.trim() || !newBoothCode.trim()) return;
-    addBooth({
+    const payload = {
       name: newBoothName.trim(),
       code: newBoothCode.trim().toUpperCase(),
       avgTimePerSession: Number(newBoothAvg) || 5,
-    });
+    };
+    console.log('[BoothManagement] [SettingsModal] Pre-save payload for addBooth:', payload);
+    addBooth(payload);
     setNewBoothName('');
     setNewBoothCode('');
     setNewBoothAvg(5);
@@ -115,10 +117,12 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
 
   const handleSaveEditBooth = (boothId: string) => {
     if (!editName.trim() || !editCode.trim()) return;
-    editBooth(boothId, {
+    const payload = {
       name: editName.trim(),
       code: editCode.trim().toUpperCase(),
-    });
+    };
+    console.log(`[BoothManagement] [SettingsModal] Pre-save payload for editBooth (${boothId}):`, payload);
+    editBooth(boothId, payload);
     setEditingBoothId(null);
   };
 

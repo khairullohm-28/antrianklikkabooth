@@ -577,7 +577,9 @@ export const CustomerDashboard: React.FC = () => {
         ) : (
           <div className="grid grid-cols-1 sm:grid-cols-3 gap-3">
             {booths.map((b) => {
-              const activeT = tickets.find((t) => t.boothId === b.id && t.status === 'called');
+              const activeT =
+                tickets.find((t) => t.boothId === b.id && (t.status === 'called' || (t.status as string) === 'serving')) ||
+                (lastCalledTicket && lastCalledTicket.boothId === b.id ? lastCalledTicket : null);
               const waitCount = tickets.filter((t) => t.boothId === b.id && t.status === 'waiting').length;
 
               return (

@@ -147,7 +147,9 @@ export const MonitorDashboard: React.FC = () => {
             }`}
           >
             {booths.map((booth) => {
-              const activeTicket = tickets.find((t) => t.boothId === booth.id && t.status === 'called');
+              const activeTicket =
+                tickets.find((t) => t.boothId === booth.id && (t.status === 'called' || (t.status as string) === 'serving')) ||
+                (lastCalledTicket && lastCalledTicket.boothId === booth.id && (lastCalledTicket.status === 'called' || (lastCalledTicket.status as string) === 'serving') ? lastCalledTicket : null);
               const isJustCalled = lastCalledTicket && activeTicket && lastCalledTicket.id === activeTicket.id;
 
               return (
