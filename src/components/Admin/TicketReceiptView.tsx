@@ -253,6 +253,13 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
                 {settings.footerText}
               </p>
             )}
+            {isPrintMode && (
+              <div className="thermal-feed w-full flex flex-col items-center justify-center pt-1 mt-1 border-t border-dotted border-black/80">
+                <span className="text-[7px] font-mono font-black text-black tracking-widest uppercase">
+                  - - - POTONG DI SINI - - -
+                </span>
+              </div>
+            )}
           </div>
         </div>
       ) : (
@@ -370,6 +377,15 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
             <p className={`${spec.footerClass} font-bold text-black leading-tight max-w-full px-1`}>
               {settings.footerText}
             </p>
+          )}
+
+          {/* 10. FEED DISTANCE GAP FOR THERMAL PAPER TEAR/CUT BAR */}
+          {isPrintMode && (
+            <div className="thermal-feed w-full flex flex-col items-center justify-center pt-1 mt-1 border-t border-dotted border-black/80">
+              <span className="text-[7px] font-mono font-black text-black tracking-widest uppercase">
+                - - - POTONG DI SINI - - -
+              </span>
+            </div>
           )}
         </div>
       )}

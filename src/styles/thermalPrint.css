@@ -1,0 +1,128 @@
+/* thermalPrint.css - Dedicated Thermal Print Stylesheet optimized for 203 DPI Printers */
+
+@media print {
+  /* 1. Global Reset & Body Lockdown for Thermal Printing */
+  @page {
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  html, body {
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    
+    /* Disable font anti-aliasing grey shading for crisp 203 DPI thermal print heads */
+    -webkit-font-smoothing: none !important;
+    -moz-osx-font-smoothing: unset !important;
+    font-smooth: never !important;
+    text-rendering: optimizeLegibility !important;
+    image-rendering: pixelated !important;
+  }
+
+  /* 2. Hide all non-printable screen UI elements */
+  body > *:not(#thermal-print-portal) {
+    display: none !important;
+  }
+
+  /* 3. Thermal Print Portal Container - Strictly Constrained */
+  #thermal-print-portal {
+    display: block !important;
+    position: absolute !important;
+    top: 0 !important;
+    left: 0 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    background: #ffffff !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    box-sizing: border-box !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+  }
+
+  /* 4. Ticket Receipt Root Container - Strict Max Width & Overflow Hidden */
+  #printable-thermal-ticket {
+    margin: 0 auto !important;
+    box-sizing: border-box !important;
+    background: #ffffff !important;
+    color: #000000 !important;
+    border: none !important;
+    border-radius: 0 !important;
+    box-shadow: none !important;
+    width: 100% !important;
+    max-width: 100% !important;
+    overflow: hidden !important;
+    text-align: center !important;
+    display: flex !important;
+    flex-direction: column !important;
+    justify-content: space-between !important;
+    align-items: center !important;
+    page-break-inside: avoid !important;
+    break-inside: avoid !important;
+    page-break-after: avoid !important;
+    break-after: avoid !important;
+    text-rendering: optimizeLegibility !important;
+    image-rendering: pixelated !important;
+  }
+
+  /* 5. 203 DPI Crisp High-Contrast Monochrome Enforcement & Sharp Rendering */
+  #printable-thermal-ticket * {
+    color: #000000 !important;
+    background-color: transparent !important;
+    -webkit-print-color-adjust: exact !important;
+    print-color-adjust: exact !important;
+    color-adjust: exact !important;
+    text-shadow: none !important;
+    box-shadow: none !important;
+    font-weight: 800 !important;
+    -webkit-font-smoothing: none !important;
+    -moz-osx-font-smoothing: unset !important;
+    font-smooth: never !important;
+    text-rendering: optimizeLegibility !important;
+    image-rendering: pixelated !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+  }
+
+  /* Ensure QR code SVG fills with pure solid black and sharp pixel edges */
+  #printable-thermal-ticket svg {
+    shape-rendering: crispEdges !important;
+    image-rendering: pixelated !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+  }
+
+  /* Image / Logo Monochromatic High-Contrast filter */
+  #printable-thermal-ticket img {
+    filter: contrast(400%) grayscale(100%) !important;
+    image-rendering: pixelated !important;
+    image-rendering: -webkit-optimize-contrast !important;
+    image-rendering: crisp-edges !important;
+  }
+
+  /* 6. Dedicated Thermal Feed Distance Element */
+  .thermal-feed {
+    width: 100% !important;
+    height: 12mm !important;
+    min-height: 12mm !important;
+    margin-top: 2mm !important;
+    padding-top: 2px !important;
+    box-sizing: border-box !important;
+    display: flex !important;
+    flex-direction: column !important;
+    align-items: center !important;
+    justify-content: flex-start !important;
+    overflow: hidden !important;
+  }
+}
+
