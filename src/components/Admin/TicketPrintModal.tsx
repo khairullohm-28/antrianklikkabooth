@@ -140,8 +140,12 @@ export const TicketPrintModal: React.FC = () => {
             />
 
             <div className="w-full max-w-xs p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-snug">
-              <span className="font-extrabold text-amber-950 block mb-0.5">💡 Tips Cetak Printer Thermal/Stiker:</span>
-              Pada dialog cetak browser, pastikan Ukuran Kertas dipilih <b>{spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto/Roll'}</b> agar pas & tidak terpotong.
+              <span className="font-extrabold text-amber-950 block mb-1">💡 Tips Hasil Cetak Thermal Tajam & Pas Potong:</span>
+              <ul className="list-disc list-inside space-y-0.5 text-[10.5px]">
+                <li><b>Ukuran Kertas:</b> Pilih <b>{spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto'}</b> agar terpotong pas 130mm & tidak memanjang.</li>
+                <li><b>Margin:</b> Setel ke <b>Tanpa Margin / None</b>.</li>
+                <li><b>Ketajaman:</b> Centang opsi <b>Grafik Latar Belakang (Background Graphics)</b> agar teks & QR-code hitam pekat tajam.</li>
+              </ul>
             </div>
 
             {/* BLUETOOTH PRINT APP INTEGRATION SECTION */}
@@ -248,45 +252,50 @@ export const TicketPrintModal: React.FC = () => {
             <style>{`
               @media print {
                 @page {
-                  size: ${spec.pageSizeCss};
+                  size: ${spec.heightMm ? `${spec.widthMm}mm ${spec.heightMm}mm` : `${spec.widthMm}mm auto`};
                   margin: 0 !important;
                 }
                 html, body {
                   margin: 0 !important;
                   padding: 0 !important;
                   background: #ffffff !important;
-                  width: 100% !important;
-                  height: auto !important;
-                  min-height: 100% !important;
-                  overflow: visible !important;
-                  display: flex !important;
-                  justify-content: center !important;
-                  align-items: flex-start !important;
+                  width: ${spec.widthMm}mm !important;
+                  max-width: ${spec.widthMm}mm !important;
+                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
+                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  overflow: hidden !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
                 }
                 body > *:not(#thermal-print-portal) {
                   display: none !important;
                 }
                 #thermal-print-portal {
-                  display: flex !important;
-                  flex-direction: column !important;
-                  align-items: center !important;
-                  justify-content: flex-start !important;
-                  position: relative !important;
-                  width: 100% !important;
-                  max-width: ${spec.widthMm ? `${spec.widthMm}mm` : '100%'} !important;
-                  margin: 0 auto !important;
+                  display: block !important;
+                  position: absolute !important;
+                  top: 0 !important;
+                  left: 0 !important;
+                  width: ${spec.widthMm}mm !important;
+                  max-width: ${spec.widthMm}mm !important;
+                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
+                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  margin: 0 !important;
                   padding: 0 !important;
                   background: #ffffff !important;
-                  overflow: visible !important;
+                  overflow: hidden !important;
                   box-sizing: border-box !important;
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
+                  page-break-after: avoid !important;
+                  break-after: avoid !important;
                 }
                 #printable-thermal-ticket {
-                  width: 100% !important;
-                  max-width: 100% !important;
-                  height: auto !important;
-                  margin: 0 auto !important;
+                  width: ${spec.widthMm}mm !important;
+                  max-width: ${spec.widthMm}mm !important;
+                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
+                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  margin: 0 !important;
                   padding: ${spec.printPaddingCss} !important;
                   box-sizing: border-box !important;
                   background: #ffffff !important;
@@ -294,10 +303,24 @@ export const TicketPrintModal: React.FC = () => {
                   border: none !important;
                   border-radius: 0 !important;
                   box-shadow: none !important;
-                  overflow: visible !important;
+                  overflow: hidden !important;
                   text-align: center !important;
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
+                  page-break-after: avoid !important;
+                  break-after: avoid !important;
+                }
+                #printable-thermal-ticket * {
+                  color: #000000 !important;
+                  -webkit-print-color-adjust: exact !important;
+                  print-color-adjust: exact !important;
+                  color-adjust: exact !important;
+                  text-shadow: none !important;
+                  box-shadow: none !important;
+                  font-weight: 800 !important;
+                  image-rendering: pixelated !important;
+                  image-rendering: -webkit-optimize-contrast !important;
+                  image-rendering: crisp-edges !important;
                 }
               }
             `}</style>

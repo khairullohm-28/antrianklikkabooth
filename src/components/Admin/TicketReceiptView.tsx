@@ -69,16 +69,16 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
     const style = settings.dividerStyle || 'dashed';
 
     if (style === 'dashed') {
-      return <div className="w-[92%] mx-auto my-1 border-t border-dashed border-black opacity-80" />;
+      return <div className="w-[96%] mx-auto my-1 border-t-2 border-dashed border-black opacity-100" />;
     }
     if (style === 'double') {
-      return <div className="w-[92%] mx-auto my-1 border-t-2 border-double border-black opacity-80" />;
+      return <div className="w-[96%] mx-auto my-1 border-t-4 border-double border-black opacity-100" />;
     }
     if (style === 'dotted') {
-      return <div className="w-[92%] mx-auto my-1 border-t border-dotted border-black opacity-80" />;
+      return <div className="w-[96%] mx-auto my-1 border-t-2 border-dotted border-black opacity-100" />;
     }
     if (style === 'solid') {
-      return <div className="w-[92%] mx-auto my-1 border-t border-solid border-black opacity-80" />;
+      return <div className="w-[96%] mx-auto my-1 border-t-2 border-solid border-black opacity-100" />;
     }
 
     let pattern = '*';
@@ -91,7 +91,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
     const repeated = pattern.repeat(repeatCount);
 
     return (
-      <div className="w-[92%] mx-auto text-black text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-80 text-center">
+      <div className="w-[96%] mx-auto text-black font-bold text-[9px] my-0.5 select-none overflow-hidden whitespace-nowrap leading-none tracking-tighter opacity-100 text-center">
         {repeated}
       </div>
     );
@@ -159,57 +159,64 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   return (
     <div
       id={id}
-      className={`bg-white text-slate-900 ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-start transition-all box-border`}
+      className={`bg-white text-black font-extrabold ${getFontFamilyClass()} ${getShapeClass()} ${getFontScaleClass()} ${spec.paddingClass} select-none text-center flex flex-col items-center justify-start transition-all box-border`}
       style={{
-        width: isPrintMode ? '100%' : spec.widthPx,
-        height: isPrintMode ? 'auto' : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
-        minHeight: isPrintMode ? 'auto' : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
-        maxHeight: isPrintMode ? 'none' : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
+        width: isPrintMode ? `${spec.widthMm}mm` : spec.widthPx,
+        maxWidth: isPrintMode ? `${spec.widthMm}mm` : '100%',
+        height: isPrintMode ? (spec.heightMm ? `${spec.heightMm}mm` : 'auto') : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
+        maxHeight: isPrintMode ? (spec.heightMm ? `${spec.heightMm}mm` : 'none') : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
+        overflow: 'hidden',
+        boxSizing: 'border-box',
       }}
     >
       {isLandscape ? (
         /* LANDSCAPE 2-COLUMN BALANCED LAYOUT */
         <div className="w-full flex flex-row items-center justify-between gap-2 text-center my-auto">
           {/* LEFT COLUMN: Header, Logo, Number, Booth */}
-          <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pr-1 border-r border-dashed border-black/50">
+          <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pr-1 border-r-2 border-dashed border-black">
             {(settings.showLogo ?? true) && settings.logoUrl && (
               <img
                 src={settings.logoUrl}
                 alt="Photobooth Logo"
-                className="object-contain my-0.5 rounded"
-                style={{ width: `${logoWidth}px`, maxHeight: `${logoWidth}px` }}
+                className="object-contain my-0.5"
+                style={{
+                  width: `${logoWidth}px`,
+                  maxHeight: `${logoWidth}px`,
+                  filter: 'contrast(300%) grayscale(100%)',
+                  imageRendering: 'pixelated',
+                }}
                 onError={(e) => {
                   (e.target as HTMLElement).style.display = 'none';
                 }}
               />
             )}
             {settings.headerTitle && (
-              <h2 className={`${spec.headerTitleClass} text-black leading-tight max-w-full px-1`}>
+              <h2 className={`${spec.headerTitleClass} text-black font-black leading-tight max-w-full px-1`}>
                 {settings.headerTitle}
               </h2>
             )}
             {settings.subHeaderTitle && (
-              <p className={`${spec.subHeaderClass} text-black font-medium tracking-tight max-w-full px-1`}>
+              <p className={`${spec.subHeaderClass} text-black font-bold tracking-tight max-w-full px-1`}>
                 {settings.subHeaderTitle}
               </p>
             )}
             {(settings.showBranchName ?? true) && settings.branchName && (
-              <p className={`${spec.textDetailClass} text-black font-sans max-w-full px-1 leading-snug`}>
+              <p className={`${spec.textDetailClass} text-black font-bold max-w-full px-1 leading-snug`}>
                 {settings.branchName}
               </p>
             )}
             {(settings.showTicketNumber ?? true) && (
-              <div className={`${spec.ticketNumberClass} text-black font-mono tracking-tight my-0.5`}>
+              <div className={`${spec.ticketNumberClass} text-black font-black font-mono tracking-tight my-0.5`}>
                 {ticket.ticketNumber}
               </div>
             )}
             {(settings.showBoothName ?? true) && (
-              <div className={`${spec.textDetailClass} font-extrabold uppercase tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-black max-w-full truncate`}>
+              <div className={`${spec.textDetailClass} font-black uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded border-2 border-black max-w-full truncate`}>
                 {ticket.boothName}
               </div>
             )}
             {(settings.showDateTime ?? true) && (
-              <div className={`${spec.textDetailClass} text-black my-0.5 font-mono`}>
+              <div className={`${spec.textDetailClass} text-black font-bold my-0.5 font-mono`}>
                 {formatDateTime()}
               </div>
             )}
@@ -220,22 +227,29 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
             {settings.showQR && (
               <div className="flex flex-col items-center my-0.5 w-full">
                 {settings.qrSubText1 && !spec.isMicroHeight && (
-                  <p className={`${spec.footerClass} font-sans font-medium text-black leading-tight px-1`}>
+                  <p className={`${spec.footerClass} font-bold text-black leading-tight px-1`}>
                     {settings.qrSubText1}
                   </p>
                 )}
-                <div className="p-1 bg-white border border-black rounded-md flex items-center justify-center my-1">
-                  <QRCodeSVG value={customerQrUrl} size={qrSize} level="M" />
+                <div className="p-1 bg-white border-2 border-black rounded flex items-center justify-center my-1">
+                  <QRCodeSVG
+                    value={customerQrUrl}
+                    size={qrSize}
+                    level="H"
+                    fgColor="#000000"
+                    bgColor="#FFFFFF"
+                    style={{ shapeRendering: 'crispEdges' }}
+                  />
                 </div>
               </div>
             )}
             {settings.customNote && !spec.isMicroHeight && (
-              <p className={`${spec.footerClass} font-sans font-semibold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
+              <p className={`${spec.footerClass} font-bold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
                 "{settings.customNote}"
               </p>
             )}
             {settings.footerText && !spec.isMicroHeight && (
-              <p className={`${spec.footerClass} font-sans text-black leading-tight max-w-full px-1`}>
+              <p className={`${spec.footerClass} font-bold text-black leading-tight max-w-full px-1`}>
                 {settings.footerText}
               </p>
             )}
@@ -249,8 +263,13 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
             <img
               src={settings.logoUrl}
               alt="Photobooth Logo"
-              className="object-contain my-0.5 rounded"
-              style={{ width: `${logoWidth}px`, maxHeight: `${logoWidth}px` }}
+              className="object-contain my-0.5"
+              style={{
+                width: `${logoWidth}px`,
+                maxHeight: `${logoWidth}px`,
+                filter: 'contrast(300%) grayscale(100%)',
+                imageRendering: 'pixelated',
+              }}
               onError={(e) => {
                 (e.target as HTMLElement).style.display = 'none';
               }}
@@ -259,21 +278,21 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
 
           {/* 2. HEADER TITLE */}
           {settings.headerTitle && (
-            <h2 className={`${spec.headerTitleClass} text-black leading-tight max-w-full px-1`}>
+            <h2 className={`${spec.headerTitleClass} text-black font-black leading-tight max-w-full px-1`}>
               {settings.headerTitle}
             </h2>
           )}
 
           {/* SUB-HEADER TITLE */}
           {settings.subHeaderTitle && (
-            <p className={`${spec.subHeaderClass} text-black font-medium tracking-tight max-w-full px-1`}>
+            <p className={`${spec.subHeaderClass} text-black font-bold tracking-tight max-w-full px-1`}>
               {settings.subHeaderTitle}
             </p>
           )}
 
           {/* 3. BRANCH NAME */}
           {(settings.showBranchName ?? true) && settings.branchName && (
-            <p className={`${spec.textDetailClass} text-black font-sans max-w-full px-1 leading-snug`}>
+            <p className={`${spec.textDetailClass} text-black font-bold max-w-full px-1 leading-snug`}>
               {settings.branchName}
             </p>
           )}
@@ -282,28 +301,28 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
 
           {/* 4. TICKET NUMBER */}
           {(settings.showTicketNumber ?? true) && (
-            <div className={`${spec.ticketNumberClass} text-black font-mono tracking-tight my-0.5`}>
+            <div className={`${spec.ticketNumberClass} text-black font-black font-mono tracking-tight my-0.5`}>
               {ticket.ticketNumber}
             </div>
           )}
 
           {/* 5. BOOTH NAME */}
           {(settings.showBoothName ?? true) && (
-            <div className={`${spec.textDetailClass} font-extrabold uppercase tracking-wider text-black bg-slate-100 px-2 py-0.5 rounded border border-black max-w-full truncate`}>
+            <div className={`${spec.textDetailClass} font-black uppercase tracking-wider text-black bg-white px-2 py-0.5 rounded border-2 border-black max-w-full truncate`}>
               {ticket.boothName}
             </div>
           )}
 
           {/* ESTIMATED WAIT TIME */}
           {settings.showEstimatedWait === true && estimatedWaitMinutes !== undefined && estimatedWaitMinutes > 0 && !spec.isMicroHeight && (
-            <div className={`${spec.textDetailClass} text-black bg-slate-100 px-1.5 py-0.5 rounded border border-black font-sans font-bold my-0.5`}>
+            <div className={`${spec.textDetailClass} text-black bg-white px-1.5 py-0.5 rounded border-2 border-black font-bold my-0.5`}>
               Estimasi: ~{estimatedWaitMinutes} mnt
             </div>
           )}
 
           {/* 6. DATE & TIME */}
           {(settings.showDateTime ?? true) && (
-            <div className={`${spec.textDetailClass} text-black my-0.5 font-mono`}>
+            <div className={`${spec.textDetailClass} text-black font-bold my-0.5 font-mono`}>
               {formatDateTime()}
             </div>
           )}
@@ -314,25 +333,32 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
           {settings.showQR && (
             <div className="flex flex-col items-center my-0.5 w-full">
               {settings.qrSubText1 && !spec.isMicroHeight && (
-                <p className={`${spec.footerClass} font-sans font-medium text-black leading-tight px-1`}>
+                <p className={`${spec.footerClass} font-bold text-black leading-tight px-1`}>
                   {settings.qrSubText1}
                 </p>
               )}
               {settings.qrSubText2 && !spec.isMicroHeight && (
-                <p className={`${spec.footerClass} font-sans font-bold text-black leading-tight px-1 mb-0.5`}>
+                <p className={`${spec.footerClass} font-bold text-black leading-tight px-1 mb-0.5`}>
                   {settings.qrSubText2}
                 </p>
               )}
 
-              <div className="p-1 bg-white border border-black rounded-md flex items-center justify-center">
-                <QRCodeSVG value={customerQrUrl} size={qrSize} level="M" />
+              <div className="p-1 bg-white border-2 border-black rounded flex items-center justify-center">
+                <QRCodeSVG
+                  value={customerQrUrl}
+                  size={qrSize}
+                  level="H"
+                  fgColor="#000000"
+                  bgColor="#FFFFFF"
+                  style={{ shapeRendering: 'crispEdges' }}
+                />
               </div>
             </div>
           )}
 
           {/* 8. CUSTOM NOTE */}
           {settings.customNote && !spec.isMicroHeight && (
-            <p className={`${spec.footerClass} font-sans font-semibold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
+            <p className={`${spec.footerClass} font-bold text-black italic my-0.5 px-1 max-w-full leading-tight`}>
               "{settings.customNote}"
             </p>
           )}
@@ -341,7 +367,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
 
           {/* 9. FOOTER TEXT */}
           {settings.footerText && !spec.isMicroHeight && (
-            <p className={`${spec.footerClass} font-sans text-black leading-tight max-w-full px-1`}>
+            <p className={`${spec.footerClass} font-bold text-black leading-tight max-w-full px-1`}>
               {settings.footerText}
             </p>
           )}

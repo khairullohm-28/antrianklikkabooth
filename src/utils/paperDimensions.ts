@@ -408,7 +408,7 @@ export const getPaperDimensionSpec = (
     if (spec.heightMm !== null) {
       spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm`;
     } else {
-      spec.pageSizeCss = `${spec.widthMm}mm ${effectiveHeightMm}mm`;
+      spec.pageSizeCss = `${spec.widthMm}mm auto`;
     }
   }
 
