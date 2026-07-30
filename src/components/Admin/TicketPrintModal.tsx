@@ -139,15 +139,6 @@ export const TicketPrintModal: React.FC = () => {
               isPrintMode={false}
             />
 
-            <div className="w-full max-w-xs p-2.5 bg-amber-50 border border-amber-200/80 rounded-xl text-[11px] text-amber-900 leading-snug">
-              <span className="font-extrabold text-amber-950 block mb-1">💡 Tips Hasil Cetak Thermal Tajam & Pas Potong:</span>
-              <ul className="list-disc list-inside space-y-0.5 text-[10.5px]">
-                <li><b>Ukuran Kertas:</b> Pilih <b>{spec.widthMm}mm x {spec.heightMm ? `${spec.heightMm}mm` : 'Auto'}</b> agar terpotong pas 130mm & tidak memanjang.</li>
-                <li><b>Margin:</b> Setel ke <b>Tanpa Margin / None</b>.</li>
-                <li><b>Ketajaman:</b> Centang opsi <b>Grafik Latar Belakang (Background Graphics)</b> agar teks & QR-code hitam pekat tajam.</li>
-              </ul>
-            </div>
-
             {/* BLUETOOTH PRINT APP INTEGRATION SECTION */}
             <div className="w-full max-w-xs p-3 bg-blue-50/80 border border-blue-200 rounded-xl text-left space-y-2">
               <div className="flex items-center justify-between">
@@ -252,7 +243,7 @@ export const TicketPrintModal: React.FC = () => {
             <style>{`
               @media print {
                 @page {
-                  size: ${spec.heightMm ? `${spec.widthMm}mm ${spec.heightMm}mm` : `${spec.widthMm}mm auto`};
+                  size: ${spec.pageSizeCss};
                   margin: 0 !important;
                 }
                 html, body {
@@ -261,12 +252,16 @@ export const TicketPrintModal: React.FC = () => {
                   background: #ffffff !important;
                   width: ${spec.widthMm}mm !important;
                   max-width: ${spec.widthMm}mm !important;
-                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
-                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  height: ${spec.effectiveHeightMm}mm !important;
+                  max-height: ${spec.effectiveHeightMm}mm !important;
                   overflow: hidden !important;
                   -webkit-print-color-adjust: exact !important;
                   print-color-adjust: exact !important;
                   color-adjust: exact !important;
+                  -webkit-font-smoothing: none !important;
+                  -moz-osx-font-smoothing: unset !important;
+                  font-smooth: never !important;
+                  text-rendering: geometricPrecision !important;
                 }
                 body > *:not(#thermal-print-portal) {
                   display: none !important;
@@ -278,8 +273,8 @@ export const TicketPrintModal: React.FC = () => {
                   left: 0 !important;
                   width: ${spec.widthMm}mm !important;
                   max-width: ${spec.widthMm}mm !important;
-                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
-                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  height: ${spec.effectiveHeightMm}mm !important;
+                  max-height: ${spec.effectiveHeightMm}mm !important;
                   margin: 0 !important;
                   padding: 0 !important;
                   background: #ffffff !important;
@@ -293,8 +288,8 @@ export const TicketPrintModal: React.FC = () => {
                 #printable-thermal-ticket {
                   width: ${spec.widthMm}mm !important;
                   max-width: ${spec.widthMm}mm !important;
-                  height: ${spec.heightMm ? `${spec.heightMm}mm` : 'auto'} !important;
-                  max-height: ${spec.heightMm ? `${spec.heightMm}mm` : 'none'} !important;
+                  height: ${spec.effectiveHeightMm}mm !important;
+                  max-height: ${spec.effectiveHeightMm}mm !important;
                   margin: 0 !important;
                   padding: ${spec.printPaddingCss} !important;
                   box-sizing: border-box !important;
@@ -305,6 +300,10 @@ export const TicketPrintModal: React.FC = () => {
                   box-shadow: none !important;
                   overflow: hidden !important;
                   text-align: center !important;
+                  display: flex !important;
+                  flex-direction: column !important;
+                  justify-content: space-between !important;
+                  align-items: center !important;
                   page-break-inside: avoid !important;
                   break-inside: avoid !important;
                   page-break-after: avoid !important;
@@ -318,6 +317,10 @@ export const TicketPrintModal: React.FC = () => {
                   text-shadow: none !important;
                   box-shadow: none !important;
                   font-weight: 800 !important;
+                  -webkit-font-smoothing: none !important;
+                  -moz-osx-font-smoothing: unset !important;
+                  font-smooth: never !important;
+                  text-rendering: geometricPrecision !important;
                   image-rendering: pixelated !important;
                   image-rendering: -webkit-optimize-contrast !important;
                   image-rendering: crisp-edges !important;

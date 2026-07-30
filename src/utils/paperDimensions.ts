@@ -3,9 +3,10 @@ import { TicketPaperWidth } from '../types';
 export interface PaperDimensionSpec {
   widthMm: number;
   heightMm: number | null; // null for continuous roll
+  effectiveHeightMm: number; // exact height for feed distance/page cut boundary in mm
   widthPx: string;
   heightPx: string; // 'auto' or e.g. '113px'
-  pageSizeCss: string; // e.g. '50mm 30mm portrait' or '50mm 30mm landscape'
+  pageSizeCss: string; // e.g. '50mm 30mm' or '80mm 130mm'
   paddingClass: string;
   printPaddingCss: string;
   logoMaxPx: number;
@@ -32,6 +33,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 70,
         heightMm: 20,
+        effectiveHeightMm: 20,
         widthPx: '264px',
         heightPx: '75px',
         pageSizeCss: '70mm 20mm',
@@ -55,6 +57,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 50,
         heightMm: 30,
+        effectiveHeightMm: 30,
         widthPx: '189px',
         heightPx: '113px',
         pageSizeCss: '50mm 30mm',
@@ -78,6 +81,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 50,
         heightMm: 40,
+        effectiveHeightMm: 40,
         widthPx: '189px',
         heightPx: '151px',
         pageSizeCss: '50mm 40mm',
@@ -101,6 +105,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 57,
         heightMm: 40,
+        effectiveHeightMm: 40,
         widthPx: '215px',
         heightPx: '151px',
         pageSizeCss: '57mm 40mm',
@@ -124,6 +129,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 60,
         heightMm: 40,
+        effectiveHeightMm: 40,
         widthPx: '226px',
         heightPx: '151px',
         pageSizeCss: '60mm 40mm',
@@ -147,6 +153,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 80,
         heightMm: 50,
+        effectiveHeightMm: 50,
         widthPx: '300px',
         heightPx: '189px',
         pageSizeCss: '80mm 50mm',
@@ -171,6 +178,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 76,
         heightMm: 100,
+        effectiveHeightMm: 100,
         widthPx: '287px',
         heightPx: '378px',
         pageSizeCss: '76mm 100mm',
@@ -194,6 +202,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 76,
         heightMm: 130,
+        effectiveHeightMm: 130,
         widthPx: '287px',
         heightPx: '491px',
         pageSizeCss: '76mm 130mm',
@@ -217,6 +226,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 100,
         heightMm: 100,
+        effectiveHeightMm: 100,
         widthPx: '378px',
         heightPx: '378px',
         pageSizeCss: '100mm 100mm',
@@ -240,6 +250,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 100,
         heightMm: 150,
+        effectiveHeightMm: 150,
         widthPx: '378px',
         heightPx: '567px',
         pageSizeCss: '100mm 150mm',
@@ -263,6 +274,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 100,
         heightMm: 180,
+        effectiveHeightMm: 180,
         widthPx: '378px',
         heightPx: '680px',
         pageSizeCss: '100mm 180mm',
@@ -286,6 +298,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 100,
         heightMm: 200,
+        effectiveHeightMm: 200,
         widthPx: '378px',
         heightPx: '755px',
         pageSizeCss: '100mm 200mm',
@@ -309,6 +322,7 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 210,
         heightMm: 300,
+        effectiveHeightMm: 300,
         widthPx: '780px',
         heightPx: '1130px',
         pageSizeCss: '210mm 300mm',
@@ -332,9 +346,10 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 80,
         heightMm: null,
+        effectiveHeightMm: 130, // Default cut length for 80mm roll ticket
         widthPx: '300px',
         heightPx: 'auto',
-        pageSizeCss: '80mm auto',
+        pageSizeCss: '80mm 130mm',
         paddingClass: 'p-4',
         printPaddingCss: '3mm 4mm',
         logoMaxPx: 54,
@@ -356,9 +371,10 @@ export const getPaperDimensionSpec = (
       spec = {
         widthMm: 58,
         heightMm: null,
+        effectiveHeightMm: 105, // Default cut length for 58mm roll ticket
         widthPx: '230px',
         heightPx: 'auto',
-        pageSizeCss: '58mm auto',
+        pageSizeCss: '58mm 105mm',
         paddingClass: 'p-3',
         printPaddingCss: '2.5mm 3mm',
         logoMaxPx: 42,
@@ -379,37 +395,26 @@ export const getPaperDimensionSpec = (
   // Adjust pageSizeCss and orientation
   spec.orientation = orientation;
 
-  const effectiveHeightMm = spec.heightMm !== null ? spec.heightMm : (spec.widthMm >= 80 ? 160 : 120);
-
   if (orientation === 'landscape') {
-    if (spec.heightMm !== null) {
-      const origW = spec.widthMm;
-      const origH = spec.heightMm;
-      spec.widthMm = origH;
-      spec.heightMm = origW;
+    const origW = spec.widthMm;
+    const origH = spec.effectiveHeightMm;
+    spec.widthMm = origH;
+    spec.effectiveHeightMm = origW;
 
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm landscape`;
+    spec.pageSizeCss = `${spec.widthMm}mm ${spec.effectiveHeightMm}mm landscape`;
 
-      // Adjust pixel preview dimensions for landscape display
-      const origPxW = parseInt(spec.widthPx) || 280;
-      const origPxH = parseInt(spec.heightPx) || 380;
-      spec.widthPx = `${Math.max(origPxW, origPxH)}px`;
-      spec.heightPx = `${Math.min(origPxW, origPxH)}px`;
+    // Adjust pixel preview dimensions for landscape display
+    const origPxW = parseInt(spec.widthPx) || 280;
+    const origPxH = parseInt(spec.heightPx) || 380;
+    spec.widthPx = `${Math.max(origPxW, origPxH)}px`;
+    spec.heightPx = `${Math.min(origPxW, origPxH)}px`;
 
-      // Scaling down QR code slightly in landscape to fit reduced height
-      spec.qrSizePx = Math.min(spec.qrSizePx, Math.floor((spec.heightMm * 3.78) * 0.42));
-      spec.logoMaxPx = Math.min(spec.logoMaxPx, Math.floor((spec.heightMm * 3.78) * 0.22));
-    } else {
-      // Continuous roll (58mm, 80mm) in landscape
-      spec.pageSizeCss = `${spec.widthMm}mm ${effectiveHeightMm}mm landscape`;
-    }
+    // Scaling down QR code slightly in landscape to fit reduced height
+    spec.qrSizePx = Math.min(spec.qrSizePx, Math.floor((spec.effectiveHeightMm * 3.78) * 0.42));
+    spec.logoMaxPx = Math.min(spec.logoMaxPx, Math.floor((spec.effectiveHeightMm * 3.78) * 0.22));
   } else {
-    // Portrait orientation
-    if (spec.heightMm !== null) {
-      spec.pageSizeCss = `${spec.widthMm}mm ${spec.heightMm}mm`;
-    } else {
-      spec.pageSizeCss = `${spec.widthMm}mm auto`;
-    }
+    // Portrait orientation - ALWAYS specify explicit cut height
+    spec.pageSizeCss = `${spec.widthMm}mm ${spec.effectiveHeightMm}mm`;
   }
 
   return spec;

@@ -163,8 +163,8 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
       style={{
         width: isPrintMode ? `${spec.widthMm}mm` : spec.widthPx,
         maxWidth: isPrintMode ? `${spec.widthMm}mm` : '100%',
-        height: isPrintMode ? (spec.heightMm ? `${spec.heightMm}mm` : 'auto') : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
-        maxHeight: isPrintMode ? (spec.heightMm ? `${spec.heightMm}mm` : 'none') : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
+        height: isPrintMode ? `${spec.effectiveHeightMm}mm` : (spec.heightPx !== 'auto' ? spec.heightPx : 'auto'),
+        maxHeight: isPrintMode ? `${spec.effectiveHeightMm}mm` : (spec.heightPx !== 'auto' ? spec.heightPx : 'none'),
         overflow: 'hidden',
         boxSizing: 'border-box',
       }}
