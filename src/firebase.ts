@@ -27,14 +27,6 @@ export const db =
     : getFirestore(app);
 
 // Enable Firestore offline persistence
-enableIndexedDbPersistence(db).catch((err) => {
-  if (err?.code === 'failed-precondition') {
-    console.info('Firestore offline persistence failed-precondition: multiple tabs open');
-  } else if (err?.code === 'unimplemented') {
-    console.info('Firestore offline persistence is not supported by this browser');
-  } else {
-    console.debug('Firestore offline persistence notice:', err?.message || err);
-  }
-});
+enableIndexedDbPersistence(db).catch(() => {});
 
 export { doc, collection, onSnapshot, setDoc, getDoc, getDocs, updateDoc, deleteDoc, query, where, enableIndexedDbPersistence };

@@ -309,7 +309,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         channel.close();
       };
     }
-  }, [soundEnabled]);
+  }, []);
 
   // Read URL params on load to detect direct links e.g. ?mode=member or ?mode=customer or ?mode=monitor or ?ticket=VIN001
   useEffect(() => {
@@ -542,7 +542,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       // Prevent double input within 450ms
       const now = Date.now();
       if (now - lastActionTimeRef.current < 450) {
-        console.warn('[QueueTrace CALL_NEXT] Ignored duplicate click (<450ms)');
         return null;
       }
       lastActionTimeRef.current = now;
@@ -810,8 +809,6 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
         avgTimePerSession: boothData.avgTimePerSession || 5,
         themeColor: boothData.themeColor || randomColor,
       };
-
-      console.log('[QueueContext] [addBooth] Pre-save booth payload:', newBooth);
 
       const updatedBooths = [...booths, newBooth];
       const updatedLogs = addLog('ADD_BOOTH', `Menambah booth baru "${newBooth.name}" (${newBooth.code})`, newBooth.name);

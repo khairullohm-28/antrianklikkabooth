@@ -2,6 +2,7 @@ import React, { useState } from 'react';
 import { useQueue } from '../../context/QueueContext';
 import { getPaperDimensionSpec } from '../../utils/paperDimensions';
 import { processThermalLogoFile } from '../../utils/thermalLogoProcessor';
+import { TicketLogoUploader } from './TicketLogoUploader';
 import {
   Booth,
   PrintSettings,
@@ -535,73 +536,14 @@ export const SettingsModal: React.FC<SettingsModalProps> = ({ isOpen, onClose, i
                 <div className="grid grid-cols-1 lg:grid-cols-12 gap-6">
                   {/* LEFT CONTROLS PANEL (7 Cols) */}
                   <div className="lg:col-span-7 space-y-5">
-                    {/* 1. LOGO UPLOAD & WIDTH */}
-                    <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">
-                      <h5 className="font-extrabold text-xs text-slate-900 uppercase tracking-wider flex items-center gap-1.5">
-                        <ImageIcon className="w-4 h-4 text-red-600" />
-                        1. Logo Photobooth (Upload / URL)
-                      </h5>
-
-                      <div className="grid grid-cols-1 sm:grid-cols-2 gap-3 text-xs">
-                        {/* File Upload */}
-                        <div>
-                          <label className="font-semibold text-slate-700 block mb-1">
-                            Upload Logo Dari Perangkat
-                          </label>
-                          <label className="flex items-center justify-center gap-2 px-3 py-2 bg-white border border-dashed border-slate-300 rounded-xl text-xs font-bold text-slate-700 hover:border-red-500 cursor-pointer transition-colors">
-                            <Upload className="w-4 h-4 text-red-600" />
-                            <span>Pilih Gambar Logo</span>
-                            <input
-                              type="file"
-                              accept="image/*"
-                              onChange={handleLogoFileUpload}
-                              className="hidden"
-                            />
-                          </label>
-                        </div>
-
-                        {/* Direct URL */}
-                        <div>
-                          <label className="font-semibold text-slate-700 block mb-1">
-                            Atau Masukkan URL Logo
-                          </label>
-                          <input
-                            type="text"
-                            value={localPrintSettings.logoUrl}
-                            onChange={(e) =>
-                              setLocalPrintSettings({ ...localPrintSettings, logoUrl: e.target.value })
-                            }
-                            placeholder="https://example.com/logo.png"
-                            className="w-full px-3 py-2 bg-white border border-slate-300 rounded-xl text-xs focus:ring-2 focus:ring-red-500"
-                          />
-                        </div>
-                      </div>
-
-                      {localPrintSettings.logoUrl && (
-                        <div className="flex items-center justify-between pt-1 border-t border-slate-200/80">
-                          <div className="flex items-center gap-2">
-                            <label className="text-[11px] font-bold text-slate-600">Ukuran Logo (px):</label>
-                            <input
-                              type="number"
-                              min={24}
-                              max={100}
-                              value={localPrintSettings.logoWidth || 48}
-                              onChange={(e) =>
-                                setLocalPrintSettings({ ...localPrintSettings, logoWidth: Number(e.target.value) })
-                              }
-                              className="w-16 px-2 py-1 bg-white border border-slate-300 rounded-lg text-xs font-bold"
-                            />
-                          </div>
-
-                          <button
-                            onClick={() => setLocalPrintSettings({ ...localPrintSettings, logoUrl: '' })}
-                            className="text-[11px] text-rose-600 hover:underline font-bold"
-                          >
-                            Hapus Logo
-                          </button>
-                        </div>
-                      )}
-                    </div>
+                    {/* 1. TICKET LOGO UPLOADER (THERMAL OPTIMIZED B/W) */}
+                    <TicketLogoUploader
+                      logoUrl={localPrintSettings.logoUrl}
+                      showLogo={localPrintSettings.showLogo ?? true}
+                      logoWidth={localPrintSettings.logoWidth || 50}
+                      logoThreshold={localPrintSettings.logoThreshold || 128}
+                      onUpdateLogo={(updates) => setLocalPrintSettings((prev) => ({ ...prev, ...updates }))}
+                    />
 
                     {/* 2. STATIC TEXT FIELDS */}
                     <div className="p-4 bg-slate-50 rounded-2xl border border-slate-200 space-y-3">

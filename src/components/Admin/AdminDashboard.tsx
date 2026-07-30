@@ -50,8 +50,12 @@ export const AdminDashboard: React.FC = () => {
   const [loyaltySettings, setLoyaltySettings] = useState<LoyaltySettings>(DEFAULT_LOYALTY_SETTINGS);
 
   useEffect(() => {
-    const unsubMembers = subscribeMembers((list) => setMembers(list));
-    const unsubSettings = subscribeLoyaltySettings((s) => setLoyaltySettings(s));
+    const unsubMembers = subscribeMembers((list) => {
+      setMembers((prev) => (JSON.stringify(prev) === JSON.stringify(list) ? prev : list));
+    });
+    const unsubSettings = subscribeLoyaltySettings((s) => {
+      setLoyaltySettings((prev) => (JSON.stringify(prev) === JSON.stringify(s) ? prev : s));
+    });
     return () => {
       unsubMembers();
       unsubSettings();
