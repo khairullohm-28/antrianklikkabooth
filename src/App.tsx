@@ -1,10 +1,17 @@
-import React from 'react';
+import React, { Suspense, lazy } from 'react';
 import { QueueProvider, useQueue } from './context/QueueContext';
-import { AdminDashboard } from './components/Admin/AdminDashboard';
-import { CustomerDashboard } from './components/Customer/CustomerDashboard';
-import { MonitorDashboard } from './components/Monitor/MonitorDashboard';
-import { MemberContainer } from './components/Member/MemberContainer';
 import { LayoutDashboard, Tv, UserCheck, Crown } from 'lucide-react';
+
+const AdminDashboard = lazy(() => import('./components/Admin/AdminDashboard').then((m) => ({ default: m.AdminDashboard })));
+const CustomerDashboard = lazy(() => import('./components/Customer/CustomerDashboard').then((m) => ({ default: m.CustomerDashboard })));
+const MonitorDashboard = lazy(() => import('./components/Monitor/MonitorDashboard').then((m) => ({ default: m.MonitorDashboard })));
+const MemberContainer = lazy(() => import('./components/Member/MemberContainer').then((m) => ({ default: m.MemberContainer })));
+
+const DashboardLoadingFallback: React.FC = () => (
+  <div className="min-h-[50vh] w-full flex items-center justify-center">
+    <div className="w-8 h-8 border-4 border-rose-200 border-t-rose-500 rounded-full animate-spin" />
+  </div>
+);
 
 const MainContent: React.FC = () => {
   const { activeTab, setActiveTab, isAdminLoggedIn } = useQueue();
@@ -15,7 +22,9 @@ const MainContent: React.FC = () => {
   if (isMonitorMode) {
     return (
       <div className="min-h-screen w-full bg-slate-950 text-slate-100 font-sans selection:bg-red-600 selection:text-white relative flex flex-col">
-        <MonitorDashboard />
+        <Suspense fallback={<DashboardLoadingFallback />}>
+          <MonitorDashboard />
+        </Suspense>
 
         {/* Return Button for Logged In Admin Only */}
         {isAdminLoggedIn && (
@@ -38,9 +47,11 @@ const MainContent: React.FC = () => {
     <div className="min-h-screen bg-rose-50/30 text-slate-900 font-sans flex flex-col justify-between selection:bg-rose-500 selection:text-white">
       <div>
         <main className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8 py-4 sm:py-6">
-          {activeTab === 'admin' && <AdminDashboard />}
-          {activeTab === 'customer' && <CustomerDashboard />}
-          {activeTab === 'member' && <MemberContainer />}
+          <Suspense fallback={<DashboardLoadingFallback />}>
+            {activeTab === 'admin' && <AdminDashboard />}
+            {activeTab === 'customer' && <CustomerDashboard />}
+            {activeTab === 'member' && <MemberContainer />}
+          </Suspense>
         </main>
       </div>
 

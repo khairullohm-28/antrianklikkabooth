@@ -7,7 +7,9 @@ import {
   setDoc,
   updateDoc,
   deleteDoc,
-  onSnapshot
+  onSnapshot,
+  query,
+  where
 } from '../firebase';
 import { Member, MemberTier, Promo, MemberHistory, LoyaltySettings } from '../types';
 
@@ -471,17 +473,17 @@ export function subscribeMemberHistory(
   callback: (histories: MemberHistory[]) => void
 ) {
   const collRef = collection(db, 'member_history');
+  const target = memberId ? query(collRef, where('memberId', '==', memberId)) : collRef;
   return onSnapshot(
-    collRef,
+    target,
     (snapshot) => {
-      let list: MemberHistory[] = [];
+      const list: MemberHistory[] = [];
       snapshot.forEach((d) => {
         list.push({ id: d.id, ...d.data() } as MemberHistory);
       });
       list.sort((a, b) => new Date(b.date).getTime() - new Date(a.date).getTime());
-      setLocalCache(CACHE_KEY_HISTORY, list);
-      if (memberId) {
-        list = list.filter((h) => h.memberId === memberId);
+      if (!memberId) {
+        setLocalCache(CACHE_KEY_HISTORY, list);
       }
       callback(list);
     },

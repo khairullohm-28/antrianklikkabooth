@@ -12,6 +12,16 @@ if (typeof window !== 'undefined') {
   window.addEventListener('unhandledrejection', (event) => {
     console.warn('Unhandled promise rejection intercepted:', event.reason);
   });
+
+  // Register the service worker only after the page has fully loaded, so it
+  // never competes with initial render/LCP.
+  window.addEventListener('load', () => {
+    import('virtual:pwa-register')
+      .then(({ registerSW }) => registerSW({ immediate: false }))
+      .catch(() => {
+        // PWA registration is a progressive enhancement - safe to ignore if unsupported.
+      });
+  });
 }
 
 interface ErrorBoundaryProps {

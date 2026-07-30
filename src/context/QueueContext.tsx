@@ -831,6 +831,27 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const updatedBooths = booths.map((b) => (b.id === boothId ? { ...b, ...updated } : b));
       const targetBooth = updatedBooths.find((b) => b.id === boothId);
 
+      // Sync updated booth name and code to all existing tickets referencing this booth
+      const updatedTickets = tickets.map((t) => {
+        if (t.boothId === boothId) {
+          return {
+            ...t,
+            boothName: updated.name !== undefined ? updated.name : t.boothName,
+            boothCode: updated.code !== undefined ? updated.code : t.boothCode,
+          };
+        }
+        return t;
+      });
+
+      const updatedLastCalled =
+        lastCalledTicket && lastCalledTicket.boothId === boothId
+          ? {
+              ...lastCalledTicket,
+              boothName: updated.name !== undefined ? updated.name : lastCalledTicket.boothName,
+              boothCode: updated.code !== undefined ? updated.code : lastCalledTicket.boothCode,
+            }
+          : lastCalledTicket;
+
       const updatedLogs = addLog(
         'EDIT_BOOTH',
         `Mengubah pengaturan booth "${targetBooth?.name || boothId}"`,
@@ -838,9 +859,13 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       );
 
       setBooths(updatedBooths);
-      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs);
+      setTickets(updatedTickets);
+      if (updatedLastCalled !== lastCalledTicket) {
+        setLastCalledTicket(updatedLastCalled);
+      }
+      saveAndBroadcast(updatedBooths, updatedTickets, printSettings, updatedLogs, updatedLastCalled);
     },
-    [booths, addLog, saveAndBroadcast, tickets, printSettings]
+    [booths, tickets, lastCalledTicket, addLog, saveAndBroadcast, printSettings]
   );
 
   const deleteBooth = useCallback(
@@ -849,10 +874,15 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       const updatedBooths = booths.filter((b) => b.id !== boothId);
       const updatedLogs = addLog('CANCEL', `Menghapus booth "${target?.name || boothId}"`);
 
+      const updatedLastCalled = lastCalledTicket?.boothId === boothId ? null : lastCalledTicket;
+
       setBooths(updatedBooths);
-      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs);
+      if (lastCalledTicket?.boothId === boothId) {
+        setLastCalledTicket(null);
+      }
+      saveAndBroadcast(updatedBooths, tickets, printSettings, updatedLogs, updatedLastCalled);
     },
-    [booths, addLog, saveAndBroadcast, tickets, printSettings]
+    [booths, tickets, lastCalledTicket, addLog, saveAndBroadcast, printSettings]
   );
 
   const updatePrintSettings = useCallback(

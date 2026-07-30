@@ -37,14 +37,27 @@ export const TicketPrintModal: React.FC = () => {
   const origin = typeof window !== 'undefined' ? window.location.origin : '';
   const customerQrUrl = `${origin}?view=customer&ticket=${activeTicketToPrint.ticketNumber}`;
 
+  // Format date/time for the Bluetooth payload (same source field as the on-screen receipt)
+  const createdDate = new Date(activeTicketToPrint.createdAt);
+  const isValidCreatedDate = !isNaN(createdDate.getTime());
+  const btDateStr = isValidCreatedDate
+    ? `${String(createdDate.getDate()).padStart(2, '0')}/${String(createdDate.getMonth() + 1).padStart(2, '0')}/${createdDate.getFullYear()}`
+    : activeTicketToPrint.createdAt;
+  const btTimeStr = isValidCreatedDate
+    ? `${String(createdDate.getHours()).padStart(2, '0')}:${String(createdDate.getMinutes()).padStart(2, '0')}`
+    : '';
+
   // Generate Bluetooth Print payload string
-  const bluetoothPayload = generateBluetoothPrintPayload(
-    activeTicketToPrint,
-    printSettings,
-    booth?.name,
-    estimatedWaitMinutes,
-    customerQrUrl
-  );
+  const bluetoothPayload = generateBluetoothPrintPayload({
+    ticketNumber: activeTicketToPrint.ticketNumber,
+    boothName: booth?.name || '',
+    boothCode: booth?.code || '',
+    dateStr: btDateStr,
+    timeStr: btTimeStr,
+    headerTitle: printSettings.headerTitle,
+    footerMessage: printSettings.footerText,
+    qrCodeUrl: customerQrUrl,
+  });
 
   const handlePrint = () => {
     setIsPrinting(true);
