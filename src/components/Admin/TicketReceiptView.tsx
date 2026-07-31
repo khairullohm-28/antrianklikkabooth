@@ -1,8 +1,9 @@
-import React from 'react';
+import React, { useState, useEffect } from 'react';
 import { Ticket, PrintSettings } from '../../types';
 import { QRCodeSVG } from 'qrcode.react';
 import { useQueue } from '../../context/QueueContext';
 import { getPaperDimensionSpec } from '../../utils/paperDimensions';
+import { processThermalLogoDataUrl } from '../../utils/thermalLogoProcessor';
 
 interface TicketReceiptViewProps {
   ticket: Ticket;
@@ -26,6 +27,28 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
   const settings = propSettings || propPrintSettings || contextSettings || {};
 
   const spec = getPaperDimensionSpec(settings.paperWidth, settings.orientation || 'portrait');
+
+  // Pre-process the logo into genuine 1-bit black/white ONLY for actual print output.
+  const [printLogoSrc, setPrintLogoSrc] = useState<string | null>(null);
+  useEffect(() => {
+    if (!isPrintMode || !settings.logoUrl) {
+      setPrintLogoSrc(null);
+      return;
+    }
+    let cancelled = false;
+    processThermalLogoDataUrl(settings.logoUrl, { maxWidth: 250, maxHeight: 250 })
+      .then((processed) => {
+        if (!cancelled) setPrintLogoSrc(processed);
+      })
+      .catch(() => {
+        if (!cancelled) setPrintLogoSrc(null);
+      });
+    return () => {
+      cancelled = true;
+    };
+  }, [isPrintMode, settings.logoUrl]);
+
+  const logoSrc = (isPrintMode && printLogoSrc) || settings.logoUrl;
 
   // Format Date & Time according to settings
   const createdDate = new Date(ticket.createdAt);
@@ -176,7 +199,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
           <div className="w-1/2 flex flex-col items-center justify-center space-y-1 pr-1 border-r-2 border-dashed border-black">
             {(settings.showLogo ?? true) && settings.logoUrl && (
               <img
-                src={settings.logoUrl}
+                src={logoSrc}
                 alt="Photobooth Logo"
                 className="object-contain my-0.5"
                 style={{
@@ -268,7 +291,7 @@ export const TicketReceiptView: React.FC<TicketReceiptViewProps> = ({
           {/* 1. LOGO */}
           {(settings.showLogo ?? true) && settings.logoUrl && (
             <img
-              src={settings.logoUrl}
+              src={logoSrc}
               alt="Photobooth Logo"
               className="object-contain my-0.5"
               style={{
