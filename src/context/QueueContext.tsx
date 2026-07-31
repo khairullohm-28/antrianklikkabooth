@@ -1,4 +1,4 @@
-import React, { createContext, useContext, useState, useEffect, useCallback, useRef, ReactNode } from 'react';
+import React, { createContext, useContext, useState, useEffect, useCallback, useMemo, useRef, ReactNode } from 'react';
 import { Booth, Ticket, PrintSettings, ActivityLog, ActiveTab, ActivityAction } from '../types';
 import { DEFAULT_BOOTHS, DEFAULT_PRINT_SETTINGS, INITIAL_TICKETS, INITIAL_LOGS } from '../data/defaultData';
 import { announceQueueVoice } from '../utils/audio';
@@ -360,7 +360,7 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
             return prev;
           }
           const boothCode = cleanNo.replace(/[^A-Z]/g, '').substring(0, 3) || 'BOOTH';
-          const matchedBooth = booths.find((b) => b.code.toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
+          const matchedBooth = booths.find((b) => (b.code || '').toUpperCase() === boothCode) || (booths.length > 0 ? booths[0] : null);
           const seqNum = parseInt(cleanNo.replace(/\D/g, ''), 10) || 1;
           return {
             id: `virtual-${cleanNo}`,
@@ -937,7 +937,10 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     await saveToFirebase(booths, tickets, printSettings, logs, adminPin, lastCalledTicket);
   }, [saveToFirebase, booths, tickets, printSettings, logs, adminPin, lastCalledTicket]);
 
-  const isFirestoreSynced = JSON.stringify(booths) === JSON.stringify(rawFirestoreBooths);
+  const isFirestoreSynced = useMemo(
+    () => JSON.stringify(booths) === JSON.stringify(rawFirestoreBooths),
+    [booths, rawFirestoreBooths]
+  );
 
   return (
     <QueueContext.Provider
