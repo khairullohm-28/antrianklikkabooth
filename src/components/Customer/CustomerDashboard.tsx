@@ -111,8 +111,12 @@ export const CustomerDashboard: React.FC = () => {
     );
     if (active) return active;
 
-    // 2. Fallback to lastCalledTicket if it belongs to this booth
-    if (lastCalledTicket && lastCalledTicket.boothId === targetBooth.id) {
+    // 2. Fallback to lastCalledTicket if it belongs to this booth and is active
+    if (
+      lastCalledTicket &&
+      lastCalledTicket.boothId === targetBooth.id &&
+      (lastCalledTicket.status === 'called' || (lastCalledTicket.status as string) === 'serving')
+    ) {
       return lastCalledTicket;
     }
 
@@ -385,7 +389,12 @@ export const CustomerDashboard: React.FC = () => {
                 const activeT =
                   tickets.find(
                     (t) => t.boothId === b.id && (t.status === 'called' || (t.status as string) === 'serving')
-                  ) || (lastCalledTicket && lastCalledTicket.boothId === b.id ? lastCalledTicket : null);
+                  ) ||
+                  (lastCalledTicket &&
+                  lastCalledTicket.boothId === b.id &&
+                  (lastCalledTicket.status === 'called' || (lastCalledTicket.status as string) === 'serving')
+                    ? lastCalledTicket
+                    : null);
 
                 return (
                   <div
@@ -579,7 +588,11 @@ export const CustomerDashboard: React.FC = () => {
             {booths.map((b) => {
               const activeT =
                 tickets.find((t) => t.boothId === b.id && (t.status === 'called' || (t.status as string) === 'serving')) ||
-                (lastCalledTicket && lastCalledTicket.boothId === b.id ? lastCalledTicket : null);
+                (lastCalledTicket &&
+                lastCalledTicket.boothId === b.id &&
+                (lastCalledTicket.status === 'called' || (lastCalledTicket.status as string) === 'serving')
+                  ? lastCalledTicket
+                  : null);
               const waitCount = tickets.filter((t) => t.boothId === b.id && t.status === 'waiting').length;
 
               return (

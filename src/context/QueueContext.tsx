@@ -748,15 +748,25 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   const recallTicket = useCallback(
     (ticketId: string) => {
-      const ticket = tickets.find((t) => t.id === ticketId);
+      let ticket = tickets.find(
+        (t) => t.id === ticketId || (t.ticketNumber && t.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase())
+      );
+      if (
+        !ticket &&
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+      ) {
+        ticket = lastCalledTicket;
+      }
       if (!ticket) return;
 
       const nowIso = new Date().toISOString();
       const updatedTickets = tickets.map((t) => {
-        if (t.boothId === ticket.boothId && (t.status === 'called' || (t.status as string) === 'serving') && t.id !== ticketId) {
+        if (t.boothId === ticket.boothId && (t.status === 'called' || (t.status as string) === 'serving') && t.id !== ticket.id) {
           return { ...t, status: 'completed' as const, completedAt: nowIso };
         }
-        if (t.id === ticketId) {
+        if (t.id === ticket.id) {
           return { ...t, status: 'called' as const, calledAt: nowIso };
         }
         return t;
@@ -783,83 +793,194 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
       setLastCalledTicket(recalledTicket);
       saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs, recalledTicket);
     },
-    [tickets, soundEnabled, addLog, saveAndBroadcast, booths, printSettings]
+    [tickets, lastCalledTicket, soundEnabled, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const completeTicket = useCallback(
     (ticketId: string) => {
-      const ticket = tickets.find((t) => t.id === ticketId);
-      if (!ticket) return;
-
-      const updatedTickets = tickets.map((t) =>
-        t.id === ticketId
-          ? {
-              ...t,
-              status: 'completed' as const,
-              completedAt: new Date().toISOString(),
-            }
-          : t
+      let targetTicket = tickets.find(
+        (t) => t.id === ticketId || (t.ticketNumber && t.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase())
       );
+      if (
+        !targetTicket &&
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+      ) {
+        targetTicket = lastCalledTicket;
+      }
+
+      const nowIso = new Date().toISOString();
+      const targetBoothId =
+        targetTicket?.boothId ||
+        (lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+          ? lastCalledTicket.boothId
+          : null);
+
+      const targetTicketNum = targetTicket?.ticketNumber || lastCalledTicket?.ticketNumber || ticketId;
+      const targetBoothName = targetTicket?.boothName || lastCalledTicket?.boothName || 'Photobooth';
+
+      const updatedTickets = tickets.map((t) => {
+        const isMatch =
+          t.id === ticketId ||
+          (targetTicket && t.id === targetTicket.id) ||
+          (t.ticketNumber && targetTicketNum && t.ticketNumber.trim().toUpperCase() === targetTicketNum.trim().toUpperCase()) ||
+          (targetBoothId && t.boothId === targetBoothId && (t.status === 'called' || (t.status as string) === 'serving'));
+
+        if (isMatch) {
+          return {
+            ...t,
+            status: 'completed' as const,
+            completedAt: nowIso,
+          };
+        }
+        return t;
+      });
 
       const updatedLogs = addLog(
         'COMPLETE',
-        `Selesai sesi fotobooth ${ticket.ticketNumber}`,
-        ticket.boothName,
-        ticket.ticketNumber
+        `Selesai sesi fotobooth ${targetTicketNum}`,
+        targetBoothName,
+        targetTicketNum
       );
 
+      let nextLastCalled = lastCalledTicket;
+      if (
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (targetTicket && lastCalledTicket.id === targetTicket.id) ||
+          (lastCalledTicket.ticketNumber && targetTicketNum && lastCalledTicket.ticketNumber.trim().toUpperCase() === targetTicketNum.trim().toUpperCase()) ||
+          (targetBoothId && lastCalledTicket.boothId === targetBoothId))
+      ) {
+        nextLastCalled = null;
+        setLastCalledTicket(null);
+      }
+
       setTickets(updatedTickets);
-      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs, nextLastCalled);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings]
+    [tickets, lastCalledTicket, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const cancelTicket = useCallback(
     (ticketId: string) => {
-      const ticket = tickets.find((t) => t.id === ticketId);
-      if (!ticket) return;
-
-      const updatedTickets = tickets.map((t) =>
-        t.id === ticketId ? { ...t, status: 'cancelled' as const } : t
+      let targetTicket = tickets.find(
+        (t) => t.id === ticketId || (t.ticketNumber && t.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase())
       );
+      if (
+        !targetTicket &&
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+      ) {
+        targetTicket = lastCalledTicket;
+      }
+
+      const targetBoothId =
+        targetTicket?.boothId ||
+        (lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+          ? lastCalledTicket.boothId
+          : null);
+
+      const targetTicketNum = targetTicket?.ticketNumber || lastCalledTicket?.ticketNumber || ticketId;
+      const targetBoothName = targetTicket?.boothName || lastCalledTicket?.boothName || 'Photobooth';
+
+      const updatedTickets = tickets.map((t) => {
+        const isMatch =
+          t.id === ticketId ||
+          (targetTicket && t.id === targetTicket.id) ||
+          (t.ticketNumber && targetTicketNum && t.ticketNumber.trim().toUpperCase() === targetTicketNum.trim().toUpperCase());
+        return isMatch ? { ...t, status: 'cancelled' as const } : t;
+      });
 
       const updatedLogs = addLog(
         'CANCEL',
-        `Membatalkan tiket ${ticket.ticketNumber}`,
-        ticket.boothName,
-        ticket.ticketNumber
+        `Membatalkan tiket ${targetTicketNum}`,
+        targetBoothName,
+        targetTicketNum
       );
 
+      let nextLastCalled = lastCalledTicket;
+      if (
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (targetTicket && lastCalledTicket.id === targetTicket.id) ||
+          (lastCalledTicket.ticketNumber && targetTicketNum && lastCalledTicket.ticketNumber.trim().toUpperCase() === targetTicketNum.trim().toUpperCase()) ||
+          (targetBoothId && lastCalledTicket.boothId === targetBoothId))
+      ) {
+        nextLastCalled = null;
+        setLastCalledTicket(null);
+      }
+
       setTickets(updatedTickets);
-      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs, nextLastCalled);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings]
+    [tickets, lastCalledTicket, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const deleteTicket = useCallback(
     (ticketId: string) => {
-      const ticket = tickets.find((t) => t.id === ticketId);
-      if (!ticket) return;
+      let targetTicket = tickets.find(
+        (t) => t.id === ticketId || (t.ticketNumber && t.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase())
+      );
+      if (
+        !targetTicket &&
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+      ) {
+        targetTicket = lastCalledTicket;
+      }
 
-      const updatedTickets = tickets.filter((t) => t.id !== ticketId);
+      const targetBoothId =
+        targetTicket?.boothId ||
+        (lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (lastCalledTicket.ticketNumber && lastCalledTicket.ticketNumber.trim().toUpperCase() === ticketId.trim().toUpperCase()))
+          ? lastCalledTicket.boothId
+          : null);
+
+      const targetTicketNum = targetTicket?.ticketNumber || lastCalledTicket?.ticketNumber || ticketId;
+      const targetBoothName = targetTicket?.boothName || lastCalledTicket?.boothName || 'Photobooth';
+
+      const updatedTickets = tickets.filter(
+        (t) =>
+          t.id !== ticketId &&
+          (!targetTicket || t.id !== targetTicket.id) &&
+          (!t.ticketNumber || !targetTicketNum || t.ticketNumber.trim().toUpperCase() !== targetTicketNum.trim().toUpperCase())
+      );
 
       const updatedLogs = addLog(
         'CANCEL',
-        `Menghapus antrian ${ticket.ticketNumber}`,
-        ticket.boothName,
-        ticket.ticketNumber
+        `Menghapus antrian ${targetTicketNum}`,
+        targetBoothName,
+        targetTicketNum
       );
 
-      setTickets(updatedTickets);
-      if (lastCalledTicket?.id === ticketId) {
+      let nextLastCalled = lastCalledTicket;
+      if (
+        lastCalledTicket &&
+        (lastCalledTicket.id === ticketId ||
+          (targetTicket && lastCalledTicket.id === targetTicket.id) ||
+          (lastCalledTicket.ticketNumber && targetTicketNum && lastCalledTicket.ticketNumber.trim().toUpperCase() === targetTicketNum.trim().toUpperCase()) ||
+          (targetBoothId && lastCalledTicket.boothId === targetBoothId))
+      ) {
+        nextLastCalled = null;
         setLastCalledTicket(null);
       }
-      if (selectedTicketForCustomer?.id === ticketId) {
+
+      if (selectedTicketForCustomer?.id === ticketId || (targetTicket && selectedTicketForCustomer?.id === targetTicket.id)) {
         setSelectedTicketForCustomer(null);
       }
-      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs);
+
+      setTickets(updatedTickets);
+      saveAndBroadcast(booths, updatedTickets, printSettings, updatedLogs, nextLastCalled);
     },
-    [tickets, addLog, saveAndBroadcast, booths, printSettings, lastCalledTicket, selectedTicketForCustomer]
+    [tickets, lastCalledTicket, selectedTicketForCustomer, addLog, saveAndBroadcast, booths, printSettings]
   );
 
   const addBooth = useCallback(

@@ -15,7 +15,11 @@ export const BoothCard: React.FC<BoothCardProps> = ({ booth }) => {
   // Find current active called ticket for this booth
   const currentTicket =
     tickets.find((t) => t.boothId === booth.id && (t.status === 'called' || (t.status as string) === 'serving')) ||
-    (lastCalledTicket && lastCalledTicket.boothId === booth.id ? lastCalledTicket : null);
+    (lastCalledTicket &&
+    lastCalledTicket.boothId === booth.id &&
+    (lastCalledTicket.status === 'called' || (lastCalledTicket.status as string) === 'serving')
+      ? lastCalledTicket
+      : null);
 
   // Find waiting queue for this booth
   const waitingTickets = tickets
