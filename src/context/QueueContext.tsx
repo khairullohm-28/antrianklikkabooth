@@ -189,13 +189,29 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   const lastMutationTimeRef = useRef<number>(0);
   const isQuotaExceededRef = useRef<boolean>(false);
   const lastSavedHashRef = useRef<string>('');
+  const saveTimeoutRef = useRef<ReturnType<typeof setTimeout> | null>(null);
   const [isQuotaExceeded, setIsQuotaExceeded] = useState<boolean>(false);
   const [rawFirestoreBooths, setRawFirestoreBooths] = useState<Booth[]>([]);
   const [lastFirestoreUpdatedAt, setLastFirestoreUpdatedAt] = useState<string | null>(null);
 
-  // Save helper for Firebase Firestore with memoized deduplication
+  // Helper to compute a complete payload hash for deduplication
+  const computePayloadHash = useCallback(
+    (
+      b: Booth[],
+      t: Ticket[],
+      p: PrintSettings,
+      l: ActivityLog[],
+      pin: string,
+      last: Ticket | null
+    ) => {
+      return `${JSON.stringify(b)}|${JSON.stringify(t)}|${JSON.stringify(p)}|${JSON.stringify((l || []).slice(0, 15))}|${JSON.stringify(last)}|${pin}`;
+    },
+    []
+  );
+
+  // Save helper for Firebase Firestore with memoized deduplication & debouncing
   const saveToFirebase = useCallback(
-    async (
+    (
       newBooths: Booth[],
       newTickets: Ticket[],
       newPrint: PrintSettings,
@@ -205,44 +221,53 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
     ) => {
       if (isQuotaExceededRef.current) return;
 
-      const targetLastCalled = activeLastCalled !== undefined ? activeLastCalled : lastCalledTicket;
+      const targetLastCalled = activeLastCalled !== undefined ? activeLastCalled : stateRef.current.lastCalledTicket;
       const payloadLogs = (newLogs || []).slice(0, 15);
 
-      // Deduplicate saves to eliminate redundant Firestore write quota usage while capturing all mutations
-      const payloadHash = `${JSON.stringify(newBooths)}|${JSON.stringify(newTickets)}|${JSON.stringify(targetLastCalled)}|${newAdminPin}`;
+      const payloadHash = `${JSON.stringify(newBooths)}|${JSON.stringify(newTickets)}|${JSON.stringify(newPrint)}|${JSON.stringify(payloadLogs)}|${JSON.stringify(targetLastCalled)}|${newAdminPin}`;
+
       if (lastSavedHashRef.current === payloadHash) {
         return;
       }
 
-      try {
-        lastSavedHashRef.current = payloadHash;
-        lastMutationTimeRef.current = Date.now();
-        const docRef = doc(db, 'photobooth', 'appState');
-        const sanitizedPayload = JSON.parse(
-          JSON.stringify({
-            booths: newBooths,
-            tickets: newTickets,
-            printSettings: newPrint,
-            logs: payloadLogs,
-            adminPin: newAdminPin,
-            lastCalledTicket: targetLastCalled || null,
-            updatedAt: new Date().toISOString(),
-          })
-        );
-        await setDoc(docRef, sanitizedPayload, { merge: true });
-      } catch (err: any) {
-        const errMsg = String(err?.message || err);
-        const errCode = String(err?.code || '');
-        if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
-          isQuotaExceededRef.current = true;
-          setIsQuotaExceeded(true);
-          console.info('[QueueContext] Firebase Firestore quota limit reached. Seamlessly switched to Local Synchronization (BroadcastChannel & LocalStorage).');
-        } else {
-          console.warn('[QueueContext] Firebase save error:', err);
-        }
+      if (saveTimeoutRef.current) {
+        clearTimeout(saveTimeoutRef.current);
       }
+
+      saveTimeoutRef.current = setTimeout(async () => {
+        if (isQuotaExceededRef.current) return;
+        if (lastSavedHashRef.current === payloadHash) return;
+
+        try {
+          lastSavedHashRef.current = payloadHash;
+          lastMutationTimeRef.current = Date.now();
+          const docRef = doc(db, 'photobooth', 'appState');
+          const sanitizedPayload = JSON.parse(
+            JSON.stringify({
+              booths: newBooths,
+              tickets: newTickets,
+              printSettings: newPrint,
+              logs: payloadLogs,
+              adminPin: newAdminPin,
+              lastCalledTicket: targetLastCalled || null,
+              updatedAt: new Date().toISOString(),
+            })
+          );
+          await setDoc(docRef, sanitizedPayload, { merge: true });
+        } catch (err: any) {
+          const errMsg = String(err?.message || err);
+          const errCode = String(err?.code || '');
+          if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
+            isQuotaExceededRef.current = true;
+            setIsQuotaExceeded(true);
+            console.info('[QueueContext] Firebase Firestore quota limit reached. Switched to Local Synchronization (BroadcastChannel & LocalStorage).');
+          } else {
+            console.warn('[QueueContext] Firebase save error:', err);
+          }
+        }
+      }, 250); // 250ms debouncing merges rapid local actions into a single write
     },
-    [lastCalledTicket]
+    []
   );
 
   const setSoundEnabled = useCallback(
@@ -411,71 +436,115 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
 
   // Firebase Realtime Firestore Subscription across all clients/devices
   useEffect(() => {
-    const docRef = doc(db, 'photobooth', 'appState');
-    const unsubscribe = onSnapshot(
-      docRef,
-      (snapshot) => {
-        if (snapshot.exists()) {
-          const data = snapshot.data();
-          if (data) {
-            if (Array.isArray(data.booths)) {
-              setRawFirestoreBooths(data.booths);
-            }
-            if (data.updatedAt) {
-              setLastFirestoreUpdatedAt(data.updatedAt);
-            }
+    let unsubscribeFn: (() => void) | null = null;
+    let retryTimer: ReturnType<typeof setTimeout> | null = null;
+    let cancelled = false;
 
-            if (Array.isArray(data.booths)) {
-              setBooths((prev) => (JSON.stringify(prev) === JSON.stringify(data.booths) ? prev : data.booths));
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(data.booths)); } catch {}
-            }
-            if (Array.isArray(data.tickets)) {
-              setTickets((prev) => (JSON.stringify(prev) === JSON.stringify(data.tickets) ? prev : data.tickets));
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(data.tickets)); } catch {}
-            }
-            if (data.printSettings) {
-              const mergedPrint = { ...DEFAULT_PRINT_SETTINGS, ...data.printSettings };
-              setPrintSettings((prev) => (JSON.stringify(prev) === JSON.stringify(mergedPrint) ? prev : mergedPrint));
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(mergedPrint)); } catch {}
-            }
-            if (Array.isArray(data.logs)) {
-              setLogs((prev) => (JSON.stringify(prev) === JSON.stringify(data.logs) ? prev : data.logs));
-              try { localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(data.logs)); } catch {}
-            }
-            if (data.adminPin && typeof data.adminPin === 'string') {
-              setAdminPin((prev) => (prev === data.adminPin ? prev : data.adminPin));
-              try { localStorage.setItem('photobooth_admin_pin', data.adminPin); } catch {}
-            }
-            if (data.lastCalledTicket !== undefined) {
-              const nextLast = data.lastCalledTicket as Ticket | null;
-              setLastCalledTicket((prev) => (JSON.stringify(prev) === JSON.stringify(nextLast) ? prev : nextLast));
-              if (nextLast) {
-                try { localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(nextLast)); } catch {}
-              } else {
-                try { localStorage.removeItem('photobooth_last_called_ticket'); } catch {}
+    const clearRetryTimer = () => {
+      if (retryTimer) {
+        clearTimeout(retryTimer);
+        retryTimer = null;
+      }
+    };
+
+    const subscribe = () => {
+      const docRef = doc(db, 'photobooth', 'appState');
+      unsubscribeFn = onSnapshot(
+        docRef,
+        (snapshot) => {
+          if (isQuotaExceededRef.current) {
+            isQuotaExceededRef.current = false;
+            setIsQuotaExceeded(false);
+            console.info('[QueueContext] Firestore connection restored - back to realtime sync.');
+          }
+
+          if (snapshot.exists()) {
+            const data = snapshot.data();
+            if (data) {
+              const mergedPrint = data.printSettings
+                ? { ...DEFAULT_PRINT_SETTINGS, ...data.printSettings }
+                : DEFAULT_PRINT_SETTINGS;
+
+              // Synchronize lastSavedHashRef with incoming snapshot hash to prevent loop/echo writes
+              const incomingHash = `${JSON.stringify(data.booths || [])}|${JSON.stringify(data.tickets || [])}|${JSON.stringify(mergedPrint)}|${JSON.stringify((data.logs || []).slice(0, 15))}|${JSON.stringify(data.lastCalledTicket || null)}|${data.adminPin || '1234'}`;
+              lastSavedHashRef.current = incomingHash;
+
+              if (Array.isArray(data.booths)) {
+                setRawFirestoreBooths(data.booths);
+                setBooths((prev) => (JSON.stringify(prev) === JSON.stringify(data.booths) ? prev : data.booths));
+                try { localStorage.setItem(LOCAL_STORAGE_KEY_BOOTHS, JSON.stringify(data.booths)); } catch {}
+              }
+              if (data.updatedAt) {
+                setLastFirestoreUpdatedAt(data.updatedAt);
+              }
+              if (Array.isArray(data.tickets)) {
+                setTickets((prev) => (JSON.stringify(prev) === JSON.stringify(data.tickets) ? prev : data.tickets));
+                try { localStorage.setItem(LOCAL_STORAGE_KEY_TICKETS, JSON.stringify(data.tickets)); } catch {}
+              }
+              if (data.printSettings) {
+                setPrintSettings((prev) => (JSON.stringify(prev) === JSON.stringify(mergedPrint) ? prev : mergedPrint));
+                try { localStorage.setItem(LOCAL_STORAGE_KEY_PRINT, JSON.stringify(mergedPrint)); } catch {}
+              }
+              if (Array.isArray(data.logs)) {
+                setLogs((prev) => (JSON.stringify(prev) === JSON.stringify(data.logs) ? prev : data.logs));
+                try { localStorage.setItem(LOCAL_STORAGE_KEY_LOGS, JSON.stringify(data.logs)); } catch {}
+              }
+              if (data.adminPin && typeof data.adminPin === 'string') {
+                setAdminPin((prev) => (prev === data.adminPin ? prev : data.adminPin));
+                try { localStorage.setItem('photobooth_admin_pin', data.adminPin); } catch {}
+              }
+              if (data.lastCalledTicket !== undefined) {
+                const nextLast = data.lastCalledTicket as Ticket | null;
+                setLastCalledTicket((prev) => (JSON.stringify(prev) === JSON.stringify(nextLast) ? prev : nextLast));
+                if (nextLast) {
+                  try { localStorage.setItem('photobooth_last_called_ticket', JSON.stringify(nextLast)); } catch {}
+                } else {
+                  try { localStorage.removeItem('photobooth_last_called_ticket'); } catch {}
+                }
               }
             }
+          } else {
+            // Document does not exist yet on Firestore -> Seed initial state
+            const s = stateRef.current;
+            saveToFirebase(s.booths, s.tickets, s.printSettings, s.logs, s.adminPin, s.lastCalledTicket);
           }
-        } else {
-          // Document does not exist yet on Firestore -> Seed initial state
-          const s = stateRef.current;
-          saveToFirebase(s.booths, s.tickets, s.printSettings, s.logs, s.adminPin, s.lastCalledTicket);
+        },
+        (error) => {
+          const errMsg = String(error?.message || error);
+          const errCode = String((error as any)?.code || '');
+          if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
+            isQuotaExceededRef.current = true;
+            setIsQuotaExceeded(true);
+            console.info('[QueueContext] Firestore Quota exceeded. Offline Local Mode active (BroadcastChannel & LocalStorage). Will retry automatically.');
+            clearRetryTimer();
+            retryTimer = setTimeout(() => {
+              if (!cancelled) subscribe();
+            }, 120000);
+          } else {
+            console.warn('Firebase onSnapshot error:', error);
+          }
         }
-      },
-      (error) => {
-        const errMsg = String(error?.message || error);
-        const errCode = String((error as any)?.code || '');
-        if (errMsg.includes('Quota exceeded') || errCode.includes('resource-exhausted')) {
-          isQuotaExceededRef.current = true;
-          setIsQuotaExceeded(true);
-          console.info('[QueueContext] Firestore Quota exceeded. Offline Local Mode active (BroadcastChannel & LocalStorage).');
-        } else {
-          console.warn('Firebase onSnapshot error:', error);
-        }
-      }
-    );
+      );
+    };
 
-    return () => unsubscribe();
+    const handleRetryTrigger = () => {
+      if (isQuotaExceededRef.current && !cancelled) {
+        if (unsubscribeFn) unsubscribeFn();
+        subscribe();
+      }
+    };
+
+    subscribe();
+    document.addEventListener('visibilitychange', handleRetryTrigger);
+    window.addEventListener('online', handleRetryTrigger);
+
+    return () => {
+      cancelled = true;
+      clearRetryTimer();
+      document.removeEventListener('visibilitychange', handleRetryTrigger);
+      window.removeEventListener('online', handleRetryTrigger);
+      if (unsubscribeFn) unsubscribeFn();
+    };
   }, [saveToFirebase]);
 
   // Save to LocalStorage, Firebase & broadcast
@@ -933,9 +1002,29 @@ export const QueueProvider: React.FC<{ children: ReactNode }> = ({ children }) =
   }, []);
 
   const forceSyncToFirestore = useCallback(async () => {
+    if (saveTimeoutRef.current) {
+      clearTimeout(saveTimeoutRef.current);
+    }
     lastSavedHashRef.current = '';
-    await saveToFirebase(booths, tickets, printSettings, logs, adminPin, lastCalledTicket);
-  }, [saveToFirebase, booths, tickets, printSettings, logs, adminPin, lastCalledTicket]);
+    const s = stateRef.current;
+    try {
+      const docRef = doc(db, 'photobooth', 'appState');
+      const sanitizedPayload = JSON.parse(
+        JSON.stringify({
+          booths: s.booths,
+          tickets: s.tickets,
+          printSettings: s.printSettings,
+          logs: (s.logs || []).slice(0, 15),
+          adminPin: s.adminPin,
+          lastCalledTicket: s.lastCalledTicket || null,
+          updatedAt: new Date().toISOString(),
+        })
+      );
+      await setDoc(docRef, sanitizedPayload, { merge: true });
+    } catch (e) {
+      console.warn('[QueueContext] forceSyncToFirestore failed:', e);
+    }
+  }, []);
 
   const isFirestoreSynced = useMemo(
     () => JSON.stringify(booths) === JSON.stringify(rawFirestoreBooths),
